@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitQuest Certificate of Completion</title>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  GITQUEST — CERTIFICATE OF COMPLETION                        ║
+  ║  Dynamic data injection points:                              ║
+  ║    #cert-name        ← Player's full name                    ║
+  ║    #cert-date        ← Completion date (e.g. 11 Mar 2026)    ║
+  ║    #cert-id          ← Certificate ID suffix (random number) ║
+  ║    #cert-xp          ← Total XP earned                       ║
+  ║    #cert-level       ← Final level reached                   ║
+  ║                                                              ║
+  ║  Example JS injection from the game:                         ║
+  ║    document.getElementById('cert-name').textContent = name;  ║
+  ║    document.getElementById('cert-id').textContent = '00421'; ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+
+/* ─── RESET ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── PALETTE ───────────────────────────────────────── */
+:root {
+  --bg:        #1e1e1e;
+  --surface:   #252526;
+  --surface2:  #2d2d2d;
+  --border:    #3c3c3c;
+  --text:      #d4d4d4;
+  --muted:     #6a6a6a;
+  --green:     #4ec9b0;
+  --blue:      #569cd6;
+  --yellow:    #dcdcaa;
+  --pink:      #c586c0;
+  --orange:    #ce9178;
+  --gold:      #ffd700;
+  --gold-dim:  #b8960a;
+  --red:       #f44747;
+  --white:     #ffffff;
+  --mono:      'JetBrains Mono', 'Courier New', monospace;
+  --sans:      'Outfit', sans-serif;
+}
+
+/* ─── PAGE SETUP ────────────────────────────────────── */
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: var(--sans);
+}
+
+/* ─── CERTIFICATE WRAPPER ───────────────────────────── */
+.cert-wrap {
+  width: 100%;
+  max-width: 900px;
+  position: relative;
+}
+
+/* Print button */
+.print-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto 16px;
+  background: var(--green);
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 22px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .04em;
+}
+.print-btn:hover { background: #5dd9c1; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(78,201,176,.35); }
+
+/* ─── CERTIFICATE CARD ──────────────────────────────── */
+.cert {
+  background: var(--bg);
+  width: 100%;
+  aspect-ratio: 1.414 / 1; /* A4 landscape */
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04);
+}
+
+/* ─── BACKGROUND LAYERS ─────────────────────────────── */
+
+/* Faint code-line texture */
+.bg-code {
+  position: absolute;
+  inset: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.028);
+  padding: 18px 24px;
+  overflow: hidden;
+  pointer-events: none;
+  white-space: pre;
+  user-select: none;
+}
+
+/* Subtle radial glow */
+.bg-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, rgba(86,156,214,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 15% 80%, rgba(78,201,176,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 30% at 85% 20%, rgba(197,134,192,.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Diagonal scan lines */
+.bg-scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,.07) 3px,
+    rgba(0,0,0,.07) 4px
+  );
+  pointer-events: none;
+}
+
+/* ─── OUTER BORDER (double rule) ────────────────────── */
+.cert-border-outer {
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(255,215,0,.18);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.cert-border-inner {
+  position: absolute;
+  inset: 24px;
+  border: 1px solid rgba(255,215,0,.08);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Corner bracket decorations */
+.corner {
+  position: absolute;
+  width: 32px; height: 32px;
+  font-family: var(--mono);
+  font-size: 20px;
+  color: rgba(255,215,0,.35);
+  line-height: 1;
+  pointer-events: none;
+}
+.corner.tl { top: 30px;  left: 30px; }
+.corner.tr { top: 30px;  right: 30px; text-align: right; }
+.corner.bl { bottom: 30px; left: 30px; }
+.corner.br { bottom: 30px; right: 30px; text-align: right; }
+
+/* ─── CONTENT LAYER ─────────────────────────────────── */
+.cert-content {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 80px;
+  gap: 0;
+  text-align: center;
+}
+
+/* ─── TOP STRIP ─────────────────────────────────────── */
+.cert-topstrip {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg,
+    var(--green) 0%,
+    var(--blue) 25%,
+    var(--pink) 50%,
+    var(--yellow) 75%,
+    var(--green) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite;
+}
+@keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+
+/* Bottom strip mirror */
+.cert-bottomstrip {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    var(--green), var(--blue), var(--pink), var(--yellow), var(--green)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s linear infinite reverse;
+  opacity: .5;
+}
+
+/* ─── HEADER ROW ────────────────────────────────────── */
+.cert-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+/* Terminal prompt badge */
+.terminal-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--green);
+  white-space: nowrap;
+  letter-spacing: .03em;
+}
+.terminal-badge .ps1 { color: var(--green); }
+.terminal-badge .host { color: var(--blue); }
+.terminal-badge .sep { color: var(--muted); }
+.terminal-badge .path { color: var(--yellow); }
+
+/* ─── INSTITUTION LINE ──────────────────────────────── */
+.cert-institution {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+/* ─── MAIN TITLE ────────────────────────────────────── */
+.cert-title {
+  font-family: var(--sans);
+  font-size: clamp(22px, 3.2vw, 34px);
+  font-weight: 900;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+  color: var(--white);
+  margin-bottom: 16px;
+}
+.cert-title .accent-green { color: var(--green); }
+.cert-title .accent-gold  { color: var(--gold); }
+
+/* ─── DIVIDER ───────────────────────────────────────── */
+.cert-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.cert-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.cert-divider-icon {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--gold);
+  opacity: .7;
+  letter-spacing: 2px;
+}
+
+/* ─── PRESENTED TO ──────────────────────────────────── */
+.cert-presented {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+/* ─── PLAYER NAME ───────────────────────────────────── */
+.cert-name {
+  font-family: var(--sans);
+  font-size: clamp(28px, 4.5vw, 52px);
+  font-weight: 900;
+  letter-spacing: -.03em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--gold) 0%, #fff5b4 40%, var(--gold) 70%, #e6ac00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 6px;
+  min-height: 1.2em;
+}
+
+/* ─── NAME UNDERLINE ────────────────────────────────── */
+.cert-name-underline {
+  width: 280px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  margin: 0 auto 18px;
+}
+
+/* ─── STATEMENT ─────────────────────────────────────── */
+.cert-statement {
+  font-size: clamp(11px, 1.4vw, 14px);
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.6;
+  max-width: 580px;
+  margin-bottom: 20px;
+}
+.cert-statement strong { color: var(--green); font-weight: 600; }
+.cert-statement em { color: var(--yellow); font-style: normal; font-weight: 600; }
+
+/* ─── STATS ROW ─────────────────────────────────────── */
+.cert-stats {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 22px;
+}
+.cert-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 18px;
+  text-align: center;
+  min-width: 100px;
+}
+.cert-stat .s-val {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  display: block;
+}
+.cert-stat .s-lbl {
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
+.cert-stat.missions .s-val { color: var(--green); }
+.cert-stat.xp       .s-val { color: var(--gold); }
+.cert-stat.level    .s-val { color: var(--blue); }
+
+/* ─── RANK BADGE ────────────────────────────────────── */
+.cert-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(255,215,0,.12), rgba(255,215,0,.05));
+  border: 1px solid rgba(255,215,0,.3);
+  border-radius: 999px;
+  padding: 5px 18px;
+  margin-bottom: 22px;
+}
+.cert-rank .rank-icon { font-size: 14px; }
+.cert-rank .rank-text {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* ─── BOTTOM META BAR ───────────────────────────────── */
+.cert-meta {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+
+/* Signature blocks */
+.cert-sig {
+  flex: 1;
+  text-align: center;
+}
+.cert-sig-line {
+  width: 120px;
+  height: 1px;
+  background: var(--border);
+  margin: 0 auto 6px;
+}
+.cert-sig-name {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* Seal */
+.cert-seal {
+  width: 74px;
+  height: 74px;
+  flex-shrink: 0;
+  position: relative;
+}
+.cert-seal svg { width: 100%; height: 100%; }
+
+/* Date + ID */
+.cert-meta-right {
+  flex: 1;
+  text-align: right;
+}
+.cert-meta-row {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.cert-meta-row .label { color: var(--border); }
+.cert-meta-row .value { color: var(--text); }
+.cert-meta-row .value.id-val { color: var(--green); }
+
+/* ─── SIDE DECORATION ───────────────────────────────── */
+.side-deco {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 2.1;
+  color: rgba(255,255,255,.04);
+  pointer-events: none;
+  user-select: none;
+  white-space: pre;
+}
+.side-deco.left  { left: 36px; text-align: right; }
+.side-deco.right { right: 36px; }
+
+/* ─── ASCII LOGO WATERMARK ──────────────────────────── */
+.cert-ascii-watermark {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 5.5px;
+  line-height: 1.25;
+  color: rgba(255,255,255,.025);
+  white-space: pre;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: .1em;
+}
+
+/* ─── PRINT STYLES ──────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  html, body {
+    background: #111 !important;
+    padding: 0 !important;
+    width: 297mm;
+    height: 210mm;
+    display: block !important;
+  }
+
+  .print-btn { display: none !important; }
+
+  .cert-wrap {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .cert {
+    width: 297mm;
+    height: 210mm;
+    aspect-ratio: unset;
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Keep dark background for printing */
+  .cert { background: var(--bg) !important; }
+  .bg-glow, .bg-scan, .bg-code { display: block !important; }
+  .cert-topstrip { animation: none !important; }
+  .cert-name {
+    background: linear-gradient(135deg, #ffd700, #fff5b4, #ffd700) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+  }
+}
+
+/* ─── SCREEN HOVER EFFECT ───────────────────────────── */
+@media (hover: hover) {
+  .cert:hover .cert-topstrip { animation-duration: 1.5s; }
+}
+</style>
+</head>
+<body>
+
+<div class="cert-wrap">
+
+  <!-- Print button (hidden on print) -->
+  <div style="text-align:center">
+    <button class="print-btn" onclick="window.print()">
+      🖨️ &nbsp;Print / Save as PDF
+    </button>
+  </div>
+
+  <!-- ══ CERTIFICATE ══════════════════════════════════ -->
+  <div class="cert">
+
+    <!-- Animated top gradient strip -->
+    <div class="cert-topstrip"></div>
+    <div class="cert-bottomstrip"></div>
+
+    <!-- Background layers -->
+    <div class="bg-glow"></div>
+    <div class="bg-scan"></div>
+
+    <!-- Faint code background texture -->
+    <div class="bg-code" aria-hidden="true"><<<<<<< HEAD
++  feat: complete all 23 missions of GitQuest
++  fix: mastered git reset, rebase, cherry-pick
++  docs: learned conventional commits
++  chore: added .gitignore to every project
+=======
+-  console.error("I have no idea what git is")
+-  // TODO: learn version control someday
+-  rm -rf node_modules  # wait that's wrong
+>>>>>>> before-gitquest
+ 
+$ git log --oneline --graph
+* a1b2c3d (HEAD -> main, tag: git-legend) feat: become a Git Master
+* b2c3d4e feat: cherry-pick the right commits
+* c3d4e5f fix: resolve every merge conflict
+* d4e5f6g feat: git stash saved my career
+* e5f6g7h docs: git blame shows who to thank
+* f6g7h8i feat: git bisect found the bug
+* g7h8i9j refactor: git rebase -i cleaned history
+* h8i9j0k fix: git reflog rescued lost work
+* i9j0k1l feat: branch strategy mastered
+* j0k1l2m feat: git push --force-with-lease only
+  
+$ git status
+On branch main
+nothing to commit, working tree clean ✓
+  
+$ git tag -a v1.0.0 -m "Git Legend Achieved"</div>
+
+    <!-- ASCII watermark -->
+    <div class="cert-ascii-watermark" aria-hidden="true">
+ ██████╗ ██╗████████╗ ██████╗ ██╗   ██╗███████╗███████╗████████╗
+██╔════╝ ██║╚══██╔══╝██╔═══██╗██║   ██║██╔════╝██╔════╝╚══██╔══╝
+██║  ███╗██║   ██║   ██║   ██║██║   ██║█████╗  ███████╗   ██║   
+██║   ██║██║   ██║   ██║▄▄ ██║██║   ██║██╔══╝  ╚════██║   ██║   
+╚██████╔╝██║   ██║   ╚██████╔╝╚██████╔╝███████╗███████║   ██║   
+ ╚═════╝ ╚═╝   ╚═╝    ╚══▀▀═╝  ╚═════╝ ╚══════╝╚══════╝   ╚═╝  </div>
+
+    <!-- Corner decorations -->
+    <div class="corner tl" aria-hidden="true">{</div>
+    <div class="corner tr" aria-hidden="true">}</div>
+    <div class="corner bl" aria-hidden="true">}</div>
+    <div class="corner br" aria-hidden="true">{</div>
+
+    <!-- Side decorations (diff lines) -->
+    <div class="side-deco left" aria-hidden="true">+ feat
++ fix
++ docs
++ test
++ feat
++ fix
++ chore
++ feat
++ refactor
++ feat
++ fix</div>
+    <div class="side-deco right" aria-hidden="true">feat +
+fix  +
+docs +
+test +
+feat +
+fix  +
+chore+
+feat +
+refact+
+feat +
+fix  +</div>
+
+    <!-- Border overlays -->
+    <div class="cert-border-outer" aria-hidden="true"></div>
+    <div class="cert-border-inner" aria-hidden="true"></div>
+
+    <!-- ── MAIN CONTENT ────────────────────────────── -->
+    <div class="cert-content">
+
+      <!-- Header row: terminal badge + institution -->
+      <div class="cert-header">
+        <div class="terminal-badge">
+          <span class="ps1">user</span><span class="sep">@</span><span class="host">gitquest</span><span class="sep">:</span><span class="path">~</span><span class="sep">$</span>
+          <span style="color:#d4d4d4;margin-left:6px">git log --format=certificate</span>
+        </div>
+      </div>
+
+      <div class="cert-institution">GitQuest Learning Platform &nbsp;·&nbsp; Terminal Edition</div>
+
+      <!-- Main title -->
+      <div class="cert-title">
+        <span class="accent-green">Certificate</span> of
+        <span class="accent-gold">Completion</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="cert-divider">
+        <div class="cert-divider-line"></div>
+        <div class="cert-divider-icon">&lt;&lt;&lt; ★ &gt;&gt;&gt;</div>
+        <div class="cert-divider-line"></div>
+      </div>
+
+      <!-- Presented to -->
+      <div class="cert-presented">This certifies that</div>
+
+      <!-- ★ PLAYER NAME — inject via JS: document.getElementById('cert-name').textContent = name; -->
+      <div class="cert-name" id="cert-name">[Full Name]</div>
+      <div class="cert-name-underline"></div>
+
+      <!-- Statement -->
+      <div class="cert-statement">
+        has successfully completed all <strong>23 missions</strong> of the
+        <em>GitQuest Terminal Game</em>, demonstrating hands-on mastery of
+        essential Git commands — from <strong>git init</strong> to <strong>git bisect</strong> —
+        including real-world branching strategies, conflict resolution,
+        history rewriting, and debugging workflows.
+      </div>
+
+      <!-- Stats row -->
+      <div class="cert-stats">
+        <div class="cert-stat missions">
+          <span class="s-val">23 / 23</span>
+          <span class="s-lbl">Missions</span>
+        </div>
+        <!-- ★ XP: document.getElementById('cert-xp').textContent = totalXP + ' XP'; -->
+        <div class="cert-stat xp">
+          <span class="s-val" id="cert-xp">2,100 XP</span>
+          <span class="s-lbl">Earned</span>
+        </div>
+        <!-- ★ Level: document.getElementById('cert-level').textContent = 'Level ' + lvl; -->
+        <div class="cert-stat level">
+          <span class="s-val" id="cert-level">Level 6</span>
+          <span class="s-lbl">Rank</span>
+        </div>
+      </div>
+
+      <!-- Rank badge -->
+      <div class="cert-rank">
+        <span class="rank-icon">⭐</span>
+        <span class="rank-text">Git Legend &nbsp;·&nbsp; GitQuest Master</span>
+        <span class="rank-icon">⭐</span>
+      </div>
+
+      <!-- ── BOTTOM META BAR ─────────────────────── -->
+      <div class="cert-meta">
+
+        <!-- Signature 1 -->
+        <div class="cert-sig">
+          <div class="cert-sig-line"></div>
+          <div class="cert-sig-name">GitQuest Team</div>
+        </div>
+
+        <!-- Seal (SVG) -->
+        <div class="cert-seal" title="Official GitQuest Seal">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Outer ring -->
+            <circle cx="50" cy="50" r="46" fill="none" stroke="#ffd700" stroke-width="1.5" opacity=".4"/>
+            <!-- Inner ring -->
+            <circle cx="50" cy="50" r="38" fill="rgba(255,215,0,.04)" stroke="#ffd700" stroke-width=".8" opacity=".25"/>
+            <!-- Dashed circle -->
+            <circle cx="50" cy="50" r="42" fill="none"
+              stroke="rgba(255,215,0,.2)" stroke-width=".8"
+              stroke-dasharray="3 4" opacity=".5"/>
+
+            <!-- Git branch icon (simplified) -->
+            <!-- Nodes -->
+            <circle cx="50" cy="32" r="4" fill="#4ec9b0" opacity=".9"/>
+            <circle cx="50" cy="68" r="4" fill="#4ec9b0" opacity=".9"/>
+            <circle cx="66" cy="46" r="3.5" fill="#c586c0" opacity=".85"/>
+            <!-- Lines -->
+            <line x1="50" y1="36" x2="50" y2="64" stroke="#4ec9b0" stroke-width="1.5" opacity=".6"/>
+            <line x1="50" y1="36" x2="66" y2="42.5" stroke="#c586c0" stroke-width="1.2" opacity=".55" stroke-dasharray="2 2"/>
+
+            <!-- $ symbol -->
+            <text x="50" y="54" text-anchor="middle" font-family="JetBrains Mono, monospace"
+              font-size="10" fill="#dcdcaa" opacity=".7" font-weight="700">⎇</text>
+
+            <!-- Circular text — rendered as arc approximation with tspan -->
+            <path id="top-arc" d="M 12,50 A 38,38 0 0,1 88,50" fill="none"/>
+            <path id="bot-arc" d="M 14,54 A 38,38 0 0,0 86,54" fill="none"/>
+            <text font-family="JetBrains Mono, monospace" font-size="6.5" fill="#ffd700" opacity=".55" letter-spacing="2.2">
+              <textPath href="#top-arc" startOffset="8%">GITQUEST · CERTIFIED ·</textPath>
+            </text>
+            <text font-family="JetBrains Mono, monospace" font-size="6" fill="#858585" opacity=".45" letter-spacing="1.8">
+              <textPath href="#bot-arc" startOffset="12%">GIT LEGEND · MASTER</textPath>
+            </text>
+          </svg>
+        </div>
+
+        <!-- Signature 2 -->
+        <div class="cert-sig">
+          <div class="cert-sig-line"></div>
+          <div class="cert-sig-name">Course Instructor</div>
+        </div>
+
+      </div><!-- /cert-meta -->
+
+      <!-- Date + ID (right-aligned, below meta) -->
+      <div style="width:100%;display:flex;justify-content:space-between;margin-top:6px">
+        <div class="cert-meta-row">
+          <span class="label">// issued: </span>
+          <!-- ★ Date: document.getElementById('cert-date').textContent = date; -->
+          <span class="value" id="cert-date">[Completion Date]</span>
+        </div>
+        <div class="cert-meta-row">
+          <span class="label">// id: </span>
+          <!-- ★ ID: document.getElementById('cert-id').textContent = randomId; -->
+          <span class="value id-val">GQ‑2025‑<span id="cert-id">[ID]</span></span>
+        </div>
+      </div>
+
+    </div><!-- /cert-content -->
+  </div><!-- /cert -->
+</div><!-- /cert-wrap -->
+
+<script>
+  function fillCertificate({ name, date, xp, level, id } = {}) {
+    if (name)  document.getElementById('cert-name').textContent  = name;
+    if (date)  document.getElementById('cert-date').textContent  = date;
+    if (xp)    document.getElementById('cert-xp').textContent    = xp + ' XP';
+    if (level) document.getElementById('cert-level').textContent = 'Level ' + level;
+    if (id)    document.getElementById('cert-id').textContent    = id;
+  }
+
+  const demoId = String(Math.floor(Math.random() * 90000) + 10000);
+  const today  = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  // Try to load real player data from the game
+  let certData = null;
+  try {
+    const stored = localStorage.getItem('gitquest_cert');
+    if (stored) {
+      certData = JSON.parse(stored);
+      localStorage.removeItem('gitquest_cert'); // clean up after reading
+    }
+  } catch(e) {}
+
+  if (certData && certData.name && certData.name !== '[Full Name]') {
+    fillCertificate({
+      name:  certData.name,
+      date:  certData.date  || today,
+      xp:    certData.xp    || '2,100',
+      level: certData.level || 6,
+      id:    certData.id    || demoId,
+    });
+  } else {
+    // Fallback demo values
+    fillCertificate({
+      name:  '[Full Name]',
+      date:  today,
+      xp:    '2,100',
+      level: 6,
+      id:    demoId,
+    });
+  }
+</script>
+</body>
+</html>

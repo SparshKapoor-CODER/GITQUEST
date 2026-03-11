@@ -1,0 +1,3480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitQuest — Terminal Game</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ╔══════════════════════════════════════════════════════╗
+   ║  GITQUEST — VS CODE STYLE TERMINAL GAME              ║
+   ╚══════════════════════════════════════════════════════╝ */
+
+:root {
+  --bg:       #1e1e1e;
+  --sidebar:  #252526;
+  --panel:    #1e1e1e;
+  --tabbar:   #2d2d2d;
+  --border:   #3c3c3c;
+  --input-bg: #1a1a1a;
+  --green:    #4ec9b0;
+  --yellow:   #dcdcaa;
+  --blue:     #569cd6;
+  --orange:   #ce9178;
+  --red:      #f44747;
+  --pink:     #c586c0;
+  --comment:  #6a9955;
+  --text:     #d4d4d4;
+  --muted:    #858585;
+  --accent:   #0078d4;
+  --accent-h: #1184db;
+  --white:    #ffffff;
+  --xp-gold:  #ffd700;
+  --title-h:  36px;
+  --tab-h:    35px;
+  --status-h: 22px;
+  --font:     'JetBrains Mono', 'Courier New', monospace;
+  --ui-font:  'Outfit', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── TITLEBAR ─────────────────────────────────── */
+#titlebar {
+  height: var(--title-h);
+  background: #323233;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #111;
+  position: relative;
+  flex-shrink: 0;
+}
+.tb-traffic {
+  display: flex; gap: 6px; padding: 0 14px;
+}
+.tb-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%; cursor: pointer;
+  transition: filter .15s;
+}
+.tb-dot:hover { filter: brightness(1.3); }
+.tb-dot.r { background: #ff5f57; }
+.tb-dot.y { background: #febc2e; }
+.tb-dot.g { background: #28c840; }
+.tb-menu {
+  display: flex; gap: 0; margin-left: 8px;
+}
+.tb-menu-item {
+  padding: 0 8px; height: var(--title-h);
+  display: flex; align-items: center;
+  font-size: 12px; color: var(--text);
+  cursor: pointer; transition: background .1s;
+}
+.tb-menu-item:hover { background: rgba(255,255,255,.08); }
+.tb-center {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  background: #3c3c3c; border-radius: 4px;
+  padding: 4px 12px; font-size: 12px; color: var(--muted);
+  cursor: pointer; min-width: 280px; justify-content: center;
+}
+.tb-center:hover { background: #444; }
+.tb-center .search-icon { font-size: 11px; }
+.tb-right {
+  margin-left: auto; display: flex; align-items: center;
+  gap: 4px; padding-right: 8px;
+}
+.tb-icon-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; cursor: pointer; font-size: 14px;
+  transition: background .1s;
+}
+.tb-icon-btn:hover { background: rgba(255,255,255,.1); }
+
+/* ── MAIN LAYOUT ──────────────────────────────── */
+#app {
+  display: flex;
+  height: calc(100vh - var(--title-h));
+  overflow: hidden;
+}
+
+/* ── ACTIVITY BAR ─────────────────────────────── */
+#activity-bar {
+  width: 48px; min-width: 48px;
+  background: #333333;
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  border-right: 1px solid #252526;
+  gap: 2px;
+}
+.ab-icon {
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 6px;
+  font-size: 20px; color: var(--muted);
+  transition: color .15s, background .15s;
+  position: relative;
+}
+.ab-icon:hover { color: var(--text); }
+.ab-icon.active { color: var(--white); }
+.ab-icon.active::before {
+  content: '';
+  position: absolute; left: 0; top: 8px; bottom: 8px;
+  width: 2px; background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+.ab-badge {
+  position: absolute; top: 4px; right: 4px;
+  background: var(--accent); color: white;
+  font-size: 9px; font-weight: 700;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--ui-font);
+}
+
+/* ── SIDEBAR PANEL ────────────────────────────── */
+#sidebar {
+  width: 240px; min-width: 240px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+#sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+#sidebar-scroll::-webkit-scrollbar { width: 4px; }
+#sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+#sidebar-scroll::-webkit-scrollbar-thumb { background: #3c3c3c; border-radius: 2px; }
+#sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
+.sidebar-title {
+  padding: 12px 16px 8px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text);
+}
+.sidebar-section { margin-bottom: 4px; }
+.sidebar-section-header {
+  display: flex; align-items: center;
+  padding: 4px 8px 4px 16px;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text); cursor: pointer;
+  user-select: none;
+}
+.sidebar-section-header:hover { background: rgba(255,255,255,.04); }
+.sidebar-section-header .chevron { margin-right: 4px; font-size: 10px; transition: transform .15s; }
+.sidebar-section-header.open .chevron { transform: rotate(90deg); }
+
+.mission-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 8px 4px 28px;
+  cursor: pointer; border-left: 2px solid transparent;
+  font-size: 12px; color: var(--muted);
+  transition: all .1s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mission-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
+.mission-item.active { background: #094771; color: var(--white); border-left-color: var(--accent); }
+.mission-item.done { color: var(--comment); }
+.mission-item.done .mi-icon::after { content: ' ✓'; }
+.mission-item.locked { opacity: .4; cursor: not-allowed; }
+.mi-icon { font-size: 13px; flex-shrink: 0; }
+.mi-label { overflow: hidden; text-overflow: ellipsis; }
+
+/* XP panel in sidebar */
+.xp-panel {
+  margin-top: auto;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+}
+.xp-label-row {
+  display: flex; justify-content: space-between;
+  font-size: 11px; margin-bottom: 6px;
+}
+.xp-val { color: var(--xp-gold); font-weight: 700; }
+.xp-track {
+  height: 4px; background: #3c3c3c; border-radius: 2px; overflow: hidden;
+}
+.xp-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--xp-gold)); border-radius: 2px; transition: width .5s ease; }
+.level-badge {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px;
+}
+.lv-pill {
+  background: var(--accent); color: white;
+  border-radius: 4px; padding: 1px 6px;
+  font-weight: 700; font-size: 11px;
+  font-family: var(--ui-font);
+}
+.streak-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--muted); margin-top: 4px;
+}
+
+/* ── EDITOR AREA ──────────────────────────────── */
+#editor-area {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ── TABBAR ───────────────────────────────────── */
+#tabbar {
+  height: var(--tab-h);
+  background: var(--tabbar);
+  display: flex; align-items: flex-end;
+  border-bottom: 1px solid #252526;
+  overflow-x: auto; overflow-y: hidden;
+  flex-shrink: 0;
+}
+#tabbar::-webkit-scrollbar { height: 0; }
+.tab {
+  height: 100%; display: flex; align-items: center; gap: 6px;
+  padding: 0 14px;
+  border-right: 1px solid #252526;
+  cursor: pointer; font-size: 12px; color: var(--muted);
+  white-space: nowrap; min-width: 100px;
+  transition: background .1s, color .1s;
+  position: relative; flex-shrink: 0;
+}
+.tab:hover { background: #2a2d2e; color: var(--text); }
+.tab.active {
+  background: var(--bg); color: var(--text);
+  border-top: 1px solid var(--accent);
+}
+.tab .tab-close {
+  opacity: 0; font-size: 14px; color: var(--muted);
+  margin-left: auto; transition: opacity .1s;
+}
+.tab:hover .tab-close { opacity: 1; }
+.tab-icon { font-size: 14px; }
+.tab-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #e2c08d; flex-shrink: 0;
+  display: none;
+}
+.tab.modified .tab-dot { display: block; }
+.tab.modified .tab-close { display: none; }
+
+/* ── EDITOR + TERMINAL SPLIT ──────────────────── */
+#split-area {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* ── LESSON EDITOR PANE ───────────────────────── */
+#lesson-pane {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: var(--bg);
+  display: flex; gap: 0;
+}
+#lesson-pane::-webkit-scrollbar { width: 8px; }
+#lesson-pane::-webkit-scrollbar-thumb { background: #424242; border-radius: 4px; }
+
+/* Line numbers */
+.line-numbers {
+  min-width: 52px; padding: 20px 0;
+  background: var(--bg); text-align: right;
+  padding-right: 12px; padding-left: 8px;
+  color: #505050; font-size: 13px; line-height: 1.6;
+  border-right: 1px solid #2a2a2a;
+  user-select: none; flex-shrink: 0;
+  counter-reset: line;
+}
+.ln { display: block; line-height: 20px; }
+
+.editor-content {
+  flex: 1; padding: 20px 24px;
+  line-height: 1.6; font-size: 13px;
+  overflow-x: auto;
+}
+.editor-content::-webkit-scrollbar { height: 6px; }
+.editor-content::-webkit-scrollbar-thumb { background: #424242; }
+
+/* Syntax colors */
+.c-comment  { color: var(--comment); font-style: italic; }
+.c-keyword  { color: var(--blue); }
+.c-string   { color: var(--orange); }
+.c-fn       { color: var(--yellow); }
+.c-num      { color: #b5cea8; }
+.c-type     { color: var(--green); }
+.c-op       { color: var(--pink); }
+.c-cmd      { color: var(--green); font-weight: 600; }
+.c-flag     { color: var(--blue); }
+.c-path     { color: var(--orange); }
+.c-ok       { color: #4ec9b0; }
+.c-err      { color: var(--red); }
+.c-warn     { color: #dcdcaa; }
+.c-hash     { color: #b5cea8; }
+.c-branch   { color: #c586c0; }
+.c-heading  { color: var(--blue); font-weight: 700; font-size: 15px; }
+.c-subhead  { color: var(--green); font-weight: 600; font-size: 13px; }
+.c-desi     { color: #ffd580; }
+.c-horror   { color: #f44747; }
+.c-xp       { color: var(--xp-gold); font-weight: 700; }
+
+/* Code block inside lesson */
+.code-block {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+.cb-header {
+  background: #161b22;
+  padding: 6px 12px;
+  font-size: 11px; color: #848d97;
+  display: flex; justify-content: space-between;
+  border-bottom: 1px solid #30363d;
+}
+.cb-body { padding: 12px 16px; }
+.cb-body .ln-code { display: block; color: #e6edf3; line-height: 1.7; }
+
+/* Diff block */
+.diff-block { margin: 8px 0; }
+.diff-add { background: rgba(63,185,80,.15); color: #56d364; display: block; padding: 0 12px; }
+.diff-rem { background: rgba(248,81,73,.15); color: #ff7b72; display: block; padding: 0 12px; }
+.diff-ctx { color: #848d97; display: block; padding: 0 12px; }
+
+/* Callouts */
+.callout {
+  border-left: 3px solid;
+  padding: 10px 14px;
+  margin: 10px 0;
+  border-radius: 0 6px 6px 0;
+  font-size: 12.5px; line-height: 1.7;
+}
+.callout.info    { border-color: var(--blue);    background: rgba(86,156,214,.07); }
+.callout.success { border-color: var(--green);   background: rgba(78,201,176,.07); }
+.callout.warning { border-color: #dcdcaa;        background: rgba(220,220,170,.07); }
+.callout.danger  { border-color: var(--red);     background: rgba(244,71,71,.07); }
+.callout.desi    { border-color: #ffd580;        background: rgba(255,213,128,.06); }
+.callout.horror  { border-color: #ff3333;        background: rgba(255,0,0,.06); border-left-width: 4px; }
+.callout-title {
+  font-weight: 700; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 6px;
+}
+.callout.info    .callout-title { color: var(--blue); }
+.callout.success .callout-title { color: var(--green); }
+.callout.warning .callout-title { color: #dcdcaa; }
+.callout.danger  .callout-title { color: var(--red); }
+.callout.desi    .callout-title { color: #ffd580; }
+.callout.horror  .callout-title { color: #ff4444; letter-spacing: .05em; }
+
+.task-list { list-style: none; margin: 8px 0; }
+.task-list li { display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; font-size: 12.5px; }
+.task-list li::before { content: '○'; color: var(--muted); flex-shrink: 0; margin-top: 1px; }
+.task-list li.done::before { content: '●'; color: var(--green); }
+
+/* Breadcrumb */
+.breadcrumb {
+  padding: 6px 16px;
+  font-size: 11.5px; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg); flex-shrink: 0;
+}
+.breadcrumb .bc-sep { color: #555; }
+.breadcrumb .bc-cur { color: var(--text); }
+
+/* ── RESIZE HANDLE ────────────────────────────── */
+#resize-handle {
+  height: 4px; background: var(--border);
+  cursor: ns-resize; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+#resize-handle:hover, #resize-handle.dragging { background: var(--accent); }
+#resize-handle::after {
+  content: '⠿'; color: #555; font-size: 10px; letter-spacing: 2px;
+}
+
+/* ── TERMINAL PANEL ───────────────────────────── */
+#terminal-panel {
+  height: 340px; min-height: 120px; max-height: 70vh;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+.terminal-header {
+  height: 32px;
+  background: var(--tabbar);
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.terminal-tabs {
+  display: flex; height: 100%;
+}
+.terminal-tab {
+  height: 100%; display: flex; align-items: center;
+  padding: 0 14px; font-size: 12px; cursor: pointer;
+  color: var(--muted); border-bottom: 1px solid transparent;
+  transition: all .1s;
+}
+.terminal-tab:hover { color: var(--text); }
+.terminal-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.terminal-actions {
+  margin-left: auto; display: flex; gap: 2px; padding-right: 8px;
+}
+.terminal-action-btn {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; cursor: pointer; font-size: 13px; color: var(--muted);
+  transition: all .1s;
+}
+.terminal-action-btn:hover { background: rgba(255,255,255,.08); color: var(--text); }
+
+#terminal-output {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 8px 12px;
+  font-size: 13px; line-height: 1.6;
+}
+#terminal-output::-webkit-scrollbar { width: 6px; }
+#terminal-output::-webkit-scrollbar-thumb { background: #424242; }
+
+.t-line { display: block; white-space: pre-wrap; word-break: break-all; }
+.t-prompt-line { display: flex; align-items: flex-start; gap: 6px; padding: 1px 0; }
+.t-ps1 { color: var(--green); flex-shrink: 0; user-select: none; }
+.t-ps1-branch { color: var(--pink); }
+.t-ps1-sep { color: var(--muted); }
+.t-cmd-echo { color: var(--text); }
+.t-out    { color: #cccccc; }
+.t-ok     { color: #4ec9b0; }
+.t-err    { color: #f44747; }
+.t-warn   { color: #dcdcaa; }
+.t-info   { color: #9cdcfe; }
+.t-muted  { color: #858585; }
+.t-green  { color: #4ec9b0; }
+.t-yellow { color: #dcdcaa; }
+.t-red    { color: #f44747; }
+.t-pink   { color: #c586c0; }
+.t-blue   { color: #569cd6; }
+.t-gold   { color: var(--xp-gold); font-weight: 600; }
+.t-hint { color: #858585; border-left: 2px solid #3c3c3c; padding-left: 8px; font-style: italic; }
+
+.t-blank { display: block; height: 4px; }
+
+#terminal-input-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px 6px;
+  border-top: 1px solid #2a2a2a;
+  flex-shrink: 0;
+}
+#t-ps1-static {
+  color: var(--green); white-space: nowrap; flex-shrink: 0;
+  font-size: 13px;
+}
+#terminal-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--font); font-size: 13px;
+  caret-color: var(--text);
+}
+#terminal-input::placeholder { color: #555; }
+#t-cursor {
+  width: 7px; height: 14px; background: var(--text);
+  animation: blink 1.2s step-end infinite;
+  flex-shrink: 0; align-self: center;
+  display: none;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* ── STATUS BAR ───────────────────────────────── */
+#statusbar {
+  height: var(--status-h);
+  background: var(--accent);
+  display: flex; align-items: center;
+  font-size: 11.5px; color: rgba(255,255,255,.9);
+  flex-shrink: 0;
+}
+.sb-item {
+  padding: 0 8px; height: 100%;
+  display: flex; align-items: center; gap: 4px;
+  cursor: pointer; transition: background .1s;
+  white-space: nowrap;
+}
+.sb-item:hover { background: rgba(0,0,0,.15); }
+.sb-sep { width: 1px; height: 14px; background: rgba(255,255,255,.2); }
+.sb-right { margin-left: auto; }
+#sb-mission { font-weight: 600; }
+#sb-xp { font-weight: 700; color: var(--xp-gold); }
+
+/* ── NAME DIALOG ─────────────────────────────────── */
+#name-dialog-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+#name-dialog-overlay.show { opacity: 1; pointer-events: all; }
+.nd-card {
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 12px;
+  padding: 36px 40px;
+  width: 420px; max-width: 90vw;
+  text-align: center;
+  transform: scale(.92);
+  transition: transform .25s;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+}
+#name-dialog-overlay.show .nd-card { transform: scale(1); }
+.nd-emoji { font-size: 52px; display: block; margin-bottom: 14px; }
+.nd-title { font-family: var(--ui-font); font-size: 22px; font-weight: 900; color: var(--white); margin-bottom: 8px; }
+.nd-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+.nd-input {
+  width: 100%; padding: 10px 14px;
+  background: #1a1a1a; border: 1px solid #3c3c3c;
+  border-radius: 6px; color: var(--text);
+  font-family: var(--font); font-size: 14px;
+  outline: none; margin-bottom: 20px;
+  transition: border-color .15s;
+}
+.nd-input:focus { border-color: var(--accent); }
+.nd-input::placeholder { color: var(--muted); }
+
+/* ── OVERLAYS ─────────────────────────────────── */
+#xp-toast {
+  position: fixed; bottom: 40px; right: 20px;
+  background: #252526; border: 1px solid #3c3c3c;
+  border-radius: 8px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px;
+  transform: translateX(120%);
+  transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  max-width: 320px;
+}
+#xp-toast.show { transform: translateX(0); }
+.toast-icon { font-size: 22px; }
+.toast-body strong { display: block; color: var(--xp-gold); font-family: var(--ui-font); font-size: 14px; }
+.toast-body span { color: var(--muted); font-size: 11.5px; }
+
+#level-up-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+  backdrop-filter: blur(6px);
+}
+#level-up-overlay.show { opacity: 1; pointer-events: all; }
+.lu-card {
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 12px; padding: 40px 48px;
+  text-align: center;
+  transform: scale(.85);
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+  max-width: 440px; width: 90%;
+}
+#level-up-overlay.show .lu-card { transform: scale(1); }
+.lu-emoji { font-size: 56px; display: block; margin-bottom: 16px; }
+.lu-title { font-family: var(--ui-font); font-size: 26px; font-weight: 900; color: var(--white); margin-bottom: 8px; }
+.lu-title em { color: var(--xp-gold); font-style: normal; }
+.lu-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; line-height: 1.6; }
+.lu-xp { font-family: var(--ui-font); font-size: 36px; font-weight: 900; color: var(--xp-gold); }
+.lu-xp-label { font-size: 11px; color: var(--muted); margin-bottom: 28px; text-transform: uppercase; letter-spacing: .1em; }
+.lu-btns { display: flex; gap: 10px; justify-content: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 20px; border-radius: 4px; border: none;
+  font-family: var(--ui-font); font-weight: 600; font-size: 13px;
+  cursor: pointer; transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-h); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: #555; }
+
+/* ── WELCOME SCREEN ───────────────────────────── */
+#welcome-screen {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px; text-align: center; gap: 20px;
+}
+.ws-ascii {
+  font-family: var(--font); font-size: 10px; line-height: 1.2;
+  color: var(--accent); white-space: pre; letter-spacing: .05em;
+  opacity: .9;
+}
+.ws-title {
+  font-family: var(--ui-font); font-size: 32px; font-weight: 900;
+  color: var(--white);
+}
+.ws-title em { color: var(--accent); font-style: normal; }
+.ws-sub { color: var(--muted); font-size: 13px; max-width: 420px; line-height: 1.7; }
+.ws-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; max-width: 480px; width: 100%; }
+.ws-stat {
+  background: #252526; border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 12px; text-align: center;
+}
+.ws-stat .num { font-family: var(--ui-font); font-size: 28px; font-weight: 900; color: var(--accent); }
+.ws-stat .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.ws-tags { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.ws-tag {
+  background: #2d2d2d; border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 10px; font-size: 11px; color: var(--muted);
+}
+.ws-tag.hot { border-color: rgba(0,120,212,.4); color: #9cdcfe; background: rgba(0,120,212,.1); }
+
+/* progress bar in lesson */
+.mission-progress {
+  display: flex; align-items: center; gap: 8px;
+  margin: 12px 0; font-size: 12px;
+}
+.mp-track { flex:1; height:3px; background:#3c3c3c; border-radius:2px; overflow:hidden; }
+.mp-fill { height:100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius:2px; transition: width .5s; }
+
+/* keyboard shortcut chip */
+.kbd {
+  display: inline-flex; align-items: center;
+  background: #3c3c3c; border: 1px solid #555;
+  border-radius: 4px; padding: 1px 5px;
+  font-size: 10px; color: var(--text);
+  margin: 0 2px; vertical-align: middle;
+}
+
+/* ── COMMAND PALETTE ──────────────────────────── */
+#cmd-palette {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+  width: 500px; max-width: 90vw;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  z-index: 3000;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  display: none;
+}
+#cmd-palette.open { display: block; }
+#cp-input {
+  width: 100%; padding: 12px 16px;
+  background: transparent; border: none; outline: none;
+  font-family: var(--font); font-size: 14px; color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.cp-item {
+  padding: 8px 16px; font-size: 12.5px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: background .1s;
+}
+.cp-item:hover, .cp-item.active { background: #094771; }
+.cp-icon { font-size: 14px; width: 20px; text-align: center; }
+
+/* Scrollbar global */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #424242; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* Animations */
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.fade-in { animation: fadeIn .25s ease forwards; }
+
+/* ── RESPONSIVE ───────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar { display: none; }
+  #activity-bar { width: 40px; min-width: 40px; }
+  .ws-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- TITLEBAR -->
+<div id="titlebar">
+  <div class="tb-traffic">
+    <div class="tb-dot r" title="Close"></div>
+    <div class="tb-dot y" title="Minimize"></div>
+    <div class="tb-dot g" title="Maximize"></div>
+  </div>
+  <div class="tb-menu">
+    <div class="tb-menu-item">File</div>
+    <div class="tb-menu-item">Edit</div>
+    <div class="tb-menu-item">View</div>
+    <div class="tb-menu-item">Terminal</div>
+    <div class="tb-menu-item">Help</div>
+  </div>
+  <div class="tb-center" onclick="openPalette()">
+    <span class="search-icon">🔍</span>
+    <span>GitQuest — Terminal Adventures</span>
+    <span style="margin-left:auto;font-size:10px">⌘P</span>
+  </div>
+  <div class="tb-right">
+    <div class="tb-icon-btn" title="Split Editor">⊞</div>
+    <div class="tb-icon-btn" title="Layout">⊟</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- ACTIVITY BAR -->
+  <div id="activity-bar">
+    <div class="ab-icon active" title="Explorer" onclick="toggleSidebar()">📁</div>
+    <div class="ab-icon" title="Search" onclick="openPalette()">🔍</div>
+    <div class="ab-icon" title="Source Control">⎇</div>
+    <div class="ab-icon" title="Missions">
+      🎮
+      <div class="ab-badge" id="notif-badge">!</div>
+    </div>
+    <div class="ab-icon" title="Extensions" style="margin-top:auto">⚙️</div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sidebar-scroll">
+      <div class="sidebar-title">Explorer</div>
+
+      <!-- Open Editors -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-header open" onclick="toggleSection(this)">
+          <span class="chevron">▶</span> OPEN EDITORS
+        </div>
+        <div class="section-body">
+          <div class="mission-item active" id="se-current">
+            <span class="mi-icon">📄</span>
+            <span class="mi-label" id="se-current-label">welcome.md</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Missions -->
+      <div class="sidebar-section">
+        <div class="sidebar-section-header open" onclick="toggleSection(this)">
+          <span class="chevron">▶</span> GITQUEST / MISSIONS
+        </div>
+        <div class="section-body" id="missions-list"></div>
+      </div>
+    </div>
+
+    <!-- XP Panel — pinned at bottom, outside scroll -->
+    <div class="xp-panel">
+      <div class="xp-label-row">
+        <span style="color:var(--muted)">Level <span id="sb-lv">1</span></span>
+        <span class="xp-val"><span id="xp-num">0</span> XP</span>
+      </div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill" style="width:0%"></div></div>
+      <div class="level-badge">
+        <div class="lv-pill" id="lv-pill">LV 1</div>
+        <span style="color:var(--muted)">Git Explorer</span>
+      </div>
+      <div class="streak-row">🔥 <span id="streak-num">1</span> day streak</div>
+    </div>
+  </div>
+
+  <!-- EDITOR AREA -->
+  <div id="editor-area">
+    <!-- TABBAR -->
+    <div id="tabbar">
+      <div class="tab active" id="tab-welcome">
+        <span class="tab-icon">📋</span>
+        <span>welcome.md</span>
+        <span class="tab-close">✕</span>
+      </div>
+    </div>
+
+    <!-- SPLIT AREA -->
+    <div id="split-area">
+      <!-- BREADCRUMB -->
+      <div class="breadcrumb" id="breadcrumb">
+        <span>gitquest</span>
+        <span class="bc-sep">›</span>
+        <span>missions</span>
+        <span class="bc-sep">›</span>
+        <span class="bc-cur" id="bc-cur">welcome.md</span>
+      </div>
+
+      <!-- LESSON PANE -->
+      <div id="lesson-pane">
+        <div class="line-numbers" id="line-numbers"></div>
+        <div class="editor-content" id="editor-content">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- RESIZE HANDLE -->
+      <div id="resize-handle"></div>
+
+      <!-- TERMINAL PANEL -->
+      <div id="terminal-panel">
+        <div class="terminal-header">
+          <div class="terminal-tabs">
+            <div class="terminal-tab active">TERMINAL</div>
+            <div class="terminal-tab">PROBLEMS</div>
+            <div class="terminal-tab">OUTPUT</div>
+          </div>
+          <div class="terminal-actions">
+            <div class="terminal-action-btn" title="Clear" onclick="clearTerminal()">🗑</div>
+            <div class="terminal-action-btn" title="New terminal">+</div>
+            <div class="terminal-action-btn" title="Kill terminal">✕</div>
+          </div>
+        </div>
+        <div id="terminal-output"></div>
+        <div id="terminal-input-row">
+          <span id="t-ps1-static"></span>
+          <input id="terminal-input" autocomplete="off" spellcheck="false" placeholder="Type a git command…">
+          <div id="t-cursor"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div id="statusbar">
+      <div class="sb-item">⎇ <span id="sb-branch">main</span></div>
+      <div class="sb-sep"></div>
+      <div class="sb-item">⚡ <span id="sb-mission">Welcome</span></div>
+      <div class="sb-right" style="display:flex">
+        <div class="sb-item">🏆 <span id="sb-xp">0 XP</span></div>
+        <div class="sb-item">Ln <span id="sb-ln">1</span>, Col 1</div>
+        <div class="sb-item">UTF-8</div>
+        <div class="sb-item">Git Bash</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- XP Toast -->
+<div id="xp-toast">
+  <span class="toast-icon" id="toast-icon">⭐</span>
+  <div class="toast-body">
+    <strong id="toast-title">+50 XP!</strong>
+    <span id="toast-msg">Correct answer!</span>
+  </div>
+</div>
+
+<!-- Level Up Overlay -->
+<div id="level-up-overlay">
+  <div class="lu-card">
+    <span class="lu-emoji" id="lu-emoji">🎉</span>
+    <div class="lu-title">Mission <em id="lu-title-name">Complete</em>!</div>
+    <div class="lu-sub" id="lu-sub">Bhai, tu aage badh raha hai!</div>
+    <div class="lu-xp" id="lu-xp">+150 XP</div>
+    <div class="lu-xp-label">Experience Earned</div>
+    <div class="lu-btns">
+      <button class="btn btn-ghost" onclick="closeLevelUp()">Review</button>
+      <button class="btn btn-primary" id="lu-next-btn" onclick="goNextMission()">Next Mission →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Name Dialog (shown on game completion) -->
+<div id="name-dialog-overlay">
+  <div class="nd-card">
+    <span class="nd-emoji">🏆</span>
+    <div class="nd-title">Tu Git Master ban gaya!</div>
+    <div class="nd-sub">Apna poora naam enter kar — teri certificate generate hogi!</div>
+    <input class="nd-input" id="nd-name-input" type="text" placeholder="e.g. Arjun Sharma" maxlength="60"
+      onkeydown="if(event.key==='Enter') submitPlayerName()" />
+    <div class="lu-btns">
+      <button class="btn btn-primary" onclick="submitPlayerName()">Generate Certificate 🎓</button>
+    </div>
+  </div>
+</div>
+
+<!-- Command Palette -->
+<div id="cmd-palette">
+  <input id="cp-input" placeholder="Type a command or mission…" oninput="filterPalette()" onkeydown="cpKey(event)">
+  <div id="cp-list"></div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════╗
+// ║  GITQUEST ENGINE v2 — VS Code Style Terminal Game    ║
+// ╚══════════════════════════════════════════════════════╝
+
+// ── GAME STATE ────────────────────────────────────────
+const G = {
+  xp: 0,
+  level: 1,
+  streak: 1,
+  currentMission: -1,
+  unlockedMissions: [0],
+  completedMissions: [],
+  cmdHistory: [],
+  historyIdx: -1,
+  repoState: {
+    branch: 'main',
+    branches: ['main'],
+    staged: [],
+    modified: [],
+    untracked: ['README.md', 'index.js', 'package.json'],
+    committed: [],
+    remotes: {},
+    stash: [],
+    tags: [],
+    log: [
+      { hash: 'a1b2c3d', msg: 'Initial commit', author: 'You', date: '2 days ago', branch: 'main' }
+    ]
+  },
+  missionState: {},
+};
+const XP_PER_LV = 400;
+
+// ── MISSIONS DATA ──────────────────────────────────────
+const MISSIONS = [
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 0: git init
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-init',
+    title: 'git init',
+    icon: '🌱',
+    filename: 'git-init.md',
+    group: 'Basics',
+    xp: 80,
+    emoji: '🌱',
+    completionMsg: 'Repo initialized! Teri Git journey shuru ho gayi bhai 🚀',
+    requiredCmds: ['git init'],
+    content: () => renderLesson({
+      badge: 'MISSION 01 · BASICS',
+      title: 'git init — Repo Banao',
+      xp: 80,
+      objective: 'Run <code>git init</code> in the terminal below to initialize a new repository.',
+      sections: [
+        { type: 'comment', text: '// git init — Initialize a new Git repository' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'What is git init?' },
+            { t: 'blank' },
+            { t: 'text', text: '  git init creates a hidden <span class="c-path">.git/</span> folder in your project.' },
+            { t: 'text', text: '  This folder stores ALL version history, branches, config.' },
+            { t: 'text', text: '  Nothing is tracked until you tell Git what to track.' },
+            { t: 'blank' },
+            { t: 'heading', text: 'Syntax' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git init</span>               <span class="c-comment"># init in current folder</span>',
+            '<span class="c-cmd">git init</span> <span class="c-path">my-project</span>   <span class="c-comment"># init + create folder</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Desi Explanation',
+          text: 'Bhai, <code>git init</code> matlab apna time machine on karna. Abhi se tere har save ka record hoga. Jaise naya diary start karna — pehle page se likhna shuru.'
+        },
+        {
+          type: 'callout', kind: 'info',
+          title: 'What gets created',
+          text: '<code>.git/</code> folder contains: <code>HEAD</code>, <code>config</code>, <code>objects/</code>, <code>refs/</code>. Kabhi manually edit mat karna isko 🚨'
+        },
+        { type: 'blank' },
+        {
+          type: 'task',
+          text: '👇 Type <code>git init</code> in the terminal to complete this mission!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 1: git status
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-status',
+    title: 'git status',
+    icon: '📊',
+    filename: 'git-status.md',
+    group: 'Basics',
+    xp: 80,
+    emoji: '📊',
+    completionMsg: 'Status dekh liya! Ab pata hai repo mein kya ho raha hai 👀',
+    requiredCmds: ['git status'],
+    content: () => renderLesson({
+      badge: 'MISSION 02 · BASICS',
+      title: 'git status — Kya Ho Raha Hai?',
+      xp: 80,
+      objective: 'Run <code>git status</code> to see the current state of your repo.',
+      sections: [
+        { type: 'comment', text: '// git status — Show working tree status' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'git status shows you:' },
+            { t: 'blank' },
+            { t: 'text', text: '  <span class="c-ok">●</span> Staged files   — ready to commit' },
+            { t: 'text', text: '  <span class="c-warn">●</span> Modified files — changed but not staged' },
+            { t: 'text', text: '  <span class="c-muted">●</span> Untracked files — Git doesn\'t know about them yet' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git status</span>          <span class="c-comment"># full status</span>',
+            '<span class="c-cmd">git status</span> <span class="c-flag">-s</span>       <span class="c-comment"># short/compact format</span>',
+            '<span class="c-cmd">git status</span> <span class="c-flag">--short</span>  <span class="c-comment"># same as -s</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Status Symbols explained',
+          text: 'Short format mein: <code>M </code> = modified staged, <code> M</code> = modified unstaged, <code>A </code> = new file staged, <code>??</code> = untracked. Bhai, yeh symbols roz dekhne padenge! 👁️'
+        },
+        {
+          type: 'task',
+          text: '👇 Type <code>git status</code> to check your repo!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 2: git add
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-add',
+    title: 'git add & git add .',
+    icon: '📦',
+    filename: 'git-add.md',
+    group: 'Basics',
+    xp: 100,
+    emoji: '📦',
+    completionMsg: 'Staged! Files staging area mein ready hain commit ke liye 📦',
+    requiredCmds: ['git add README.md', 'git add .'],
+    content: () => renderLesson({
+      badge: 'MISSION 03 · BASICS',
+      title: 'git add — Staging Area',
+      xp: 100,
+      objective: 'Stage README.md with <code>git add README.md</code>, then stage everything with <code>git add .</code>',
+      sections: [
+        { type: 'comment', text: '// git add — Add files to the staging area (index)' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'The Three Trees of Git' },
+            { t: 'blank' },
+            { t: 'text', text: '  <span class="c-blue">Working Directory</span>  →  <span class="c-green">Staging Area</span>  →  <span class="c-pink">Repository</span>' },
+            { t: 'text', text: '       (your files)      git add ↑    git commit ↑' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git add</span> <span class="c-path">file.txt</span>        <span class="c-comment"># stage one file</span>',
+            '<span class="c-cmd">git add</span> <span class="c-path">.</span>              <span class="c-comment"># stage ALL changes</span>',
+            '<span class="c-cmd">git add</span> <span class="c-path">*.js</span>           <span class="c-comment"># stage all .js files</span>',
+            '<span class="c-cmd">git add</span> <span class="c-flag">-p</span>             <span class="c-comment"># interactive patch mode</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'warning',
+          title: '⚠️ git add . — Handle with care!',
+          text: 'Bhai, <code>git add .</code> sab kuch stage kar deta hai — <code>node_modules/</code>, <code>dataset/</code>, secrets bhi! <strong>.gitignore</strong> pehle banao, tab <code>git add .</code> karo. Horror story baad mein sunoge 😅'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #1 — The node_modules Massacre',
+          text: `<strong>Ye sach mein hua.</strong> Ek fresher ne apna pehla open source contribution diya.<br><br>
+<span class="c-muted">$ git add .</span><br>
+<span class="c-muted">$ git commit -m "my first contribution!!!"</span><br>
+<span class="c-muted">$ git push</span><br><br>
+GitHub pe PR aaya. Maintainer ne dekha:<br><br>
+<span style="color:#ffd700;font-weight:700">📊 11,000 files changed, +3,581,970 lines</span><br><br>
+Bhai, pura <code>node_modules/</code> push ho gaya tha. 140MB repo ban gayi. Maintainer ka comment:<br>
+<em style="color:#f44747">"Please read CONTRIBUTING.md before opening PRs."</em><br><br>
+Phir cleanup commit aaya:<br>
+<span style="color:#f44747">📊 10,996 files changed, -3,581,915 lines</span><br><br>
+Difference? <strong style="color:#4ec9b0">Sirf 55 lines actual code tha.</strong> Baaki sab node_modules garbage. 😭<br><br>
+<strong>Fix:</strong> <code>.gitignore</code> mein <code>node_modules/</code> likhna tha bas. Ek line. Ek line ne puri izzat bachani thi.`
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git add README.md</code> then <code>git add .</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 3: git commit
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-commit',
+    title: 'git commit',
+    icon: '💾',
+    filename: 'git-commit.md',
+    group: 'Basics',
+    xp: 100,
+    emoji: '💾',
+    completionMsg: 'First commit! History shuru ho gayi teri 🎉',
+    requiredCmds: ['git commit -m "feat: initial setup"'],
+    content: () => renderLesson({
+      badge: 'MISSION 04 · BASICS',
+      title: 'git commit — Snapshot Lo',
+      xp: 100,
+      objective: 'Create a commit: <code>git commit -m "feat: initial setup"</code>',
+      sections: [
+        { type: 'comment', text: '// git commit — Record changes to the repository' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'What does a commit contain?' },
+            { t: 'blank' },
+            { t: 'text', text: '  • A unique SHA-1 hash  (e.g. a1b2c3d...)' },
+            { t: 'text', text: '  • Author + email + timestamp' },
+            { t: 'text', text: '  • Commit message' },
+            { t: 'text', text: '  • Pointer to parent commit(s)' },
+            { t: 'text', text: '  • Tree of all tracked files at that moment' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git commit</span> <span class="c-flag">-m</span> <span class="c-string">"message"</span>     <span class="c-comment"># commit with message</span>',
+            '<span class="c-cmd">git commit</span> <span class="c-flag">-am</span> <span class="c-string">"message"</span>   <span class="c-comment"># add tracked + commit</span>',
+            '<span class="c-cmd">git commit</span> <span class="c-flag">--amend</span>        <span class="c-comment"># edit last commit</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '📝 Conventional Commits — Pro Style',
+          text: '<code>feat:</code> new feature  |  <code>fix:</code> bug fix  |  <code>docs:</code> documentation<br><code>refactor:</code> code cleanup  |  <code>chore:</code> maintenance<br><br>Bad: <code>"fixed stuff"</code> ❌ &nbsp;&nbsp; Good: <code>"fix: null pointer in checkout"</code> ✅'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #2 — The 6-Month Git Log of Shame',
+          text: `Ek startup ka production repo. Senior developer ne quit kiya. Naye dev ne git log khola:<br><br>
+<span class="c-muted">$ git log --oneline</span><br>
+<span style="color:#f44747">a1b2c3d  asdf</span><br>
+<span style="color:#f44747">b2c3d4e  fix</span><br>
+<span style="color:#f44747">c3d4e5f  asjkdhaksjdh</span><br>
+<span style="color:#f44747">d4e5f6g  changes 2</span><br>
+<span style="color:#f44747">e5f6g7h  changes</span><br>
+<span style="color:#f44747">f6g7h8i  idk what this does lol</span><br>
+<span style="color:#f44747">g7h8i9j  pls work</span><br>
+<span style="color:#f44747">h8i9j0k  ok now pls work</span><br><br>
+6 mahine, 200 commits. <strong>Koi bhi explain nahi karta tha kya kiya.</strong><br>
+Production mein ek bug aaya. Bisect karna tha kaun se commit ne todha. Impossible.<br><br>
+Naye dev ne poora codebase 3 hafte mein samjha. Senior ne 3 din mein commit messages likhkar chhod diya hota.<br><br>
+<em style="color:#dcdcaa">"Code likhna aata hai. History likhna sikho."</em> 🙏`
+        },
+        {
+          type: 'task',
+          text: '👇 Commit your staged files: <code>git commit -m "feat: initial setup"</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 4: git log
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-log',
+    title: 'git log',
+    icon: '📜',
+    filename: 'git-log.md',
+    group: 'Basics',
+    xp: 80,
+    emoji: '📜',
+    completionMsg: 'History dekh li! Time machine ka use karna aata hai ab tujhe 🕰️',
+    requiredCmds: ['git log'],
+    content: () => renderLesson({
+      badge: 'MISSION 05 · BASICS',
+      title: 'git log — History Dekho',
+      xp: 80,
+      objective: 'Run <code>git log</code> to see commit history, then try <code>git log --oneline</code>',
+      sections: [
+        { type: 'comment', text: '// git log — Show commit history' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git log</span>                      <span class="c-comment"># full log</span>',
+            '<span class="c-cmd">git log</span> <span class="c-flag">--oneline</span>           <span class="c-comment"># compact one-line</span>',
+            '<span class="c-cmd">git log</span> <span class="c-flag">--oneline --graph</span>    <span class="c-comment"># with branch graph</span>',
+            '<span class="c-cmd">git log</span> <span class="c-flag">--oneline -5</span>         <span class="c-comment"># last 5 commits</span>',
+            '<span class="c-cmd">git log</span> <span class="c-flag">--author=</span><span class="c-string">"Sparsh"</span>   <span class="c-comment"># filter by author</span>',
+            '<span class="c-cmd">git log</span> <span class="c-flag">--since=</span><span class="c-string">"2 weeks"</span>  <span class="c-comment"># filter by date</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'info',
+          title: 'Output fields',
+          text: '<code>commit a1b2c3d...</code> — SHA hash<br><code>Author:</code> — who committed<br><code>Date:</code> — when<br><code>(HEAD -> main)</code> — current position'
+        },
+        {
+          type: 'task',
+          text: '👇 Run <code>git log</code> to view your history. Try <code>git log --oneline</code> too!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 5: git diff
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-diff',
+    title: 'git diff',
+    icon: '🔍',
+    filename: 'git-diff.md',
+    group: 'Basics',
+    xp: 80,
+    emoji: '🔍',
+    completionMsg: 'Diff dekh liya! Ab changes clearly samajh aate hain 🔍',
+    requiredCmds: ['git diff'],
+    content: () => renderLesson({
+      badge: 'MISSION 06 · BASICS',
+      title: 'git diff — Changes Dekho',
+      xp: 80,
+      objective: 'Run <code>git diff</code> to see unstaged changes.',
+      sections: [
+        { type: 'comment', text: '// git diff — Show changes between commits, trees, working area' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git diff</span>              <span class="c-comment"># unstaged changes</span>',
+            '<span class="c-cmd">git diff</span> <span class="c-flag">--staged</span>     <span class="c-comment"># staged vs last commit</span>',
+            '<span class="c-cmd">git diff</span> <span class="c-branch">main..dev</span>  <span class="c-comment"># between branches</span>',
+            '<span class="c-cmd">git diff</span> <span class="c-hash">a1b2c3d</span>     <span class="c-comment"># vs specific commit</span>',
+          ]
+        },
+        {
+          type: 'diff-example'
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🎨 Reading the diff',
+          text: '<code style="color:#56d364">+ green lines</code> = added  &nbsp; <code style="color:#ff7b72">- red lines</code> = removed  &nbsp; <code style="color:#848d97">  grey lines</code> = context (unchanged)'
+        },
+        {
+          type: 'task',
+          text: '👇 Run <code>git diff</code> to see current changes.'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 6: git restore
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-restore',
+    title: 'git restore & restore --staged',
+    icon: '↩️',
+    filename: 'git-restore.md',
+    group: 'Undoing',
+    xp: 100,
+    emoji: '↩️',
+    completionMsg: 'Undo master! Galtiyan theek karna seekh liya 🛠️',
+    requiredCmds: ['git restore index.js', 'git restore --staged index.js'],
+    content: () => renderLesson({
+      badge: 'MISSION 07 · UNDOING',
+      title: 'git restore — Undo Karo',
+      xp: 100,
+      objective: 'Discard changes: <code>git restore index.js</code>, then unstage: <code>git restore --staged index.js</code>',
+      sections: [
+        { type: 'comment', text: '// git restore — Restore working tree files' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'Two kinds of restoring:' },
+            { t: 'blank' },
+            { t: 'text', text: '  1. Discard working dir changes → restore from staging/last commit' },
+            { t: 'text', text: '  2. Unstage a file → move from staging back to working dir' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git restore</span> <span class="c-path">file.txt</span>         <span class="c-comment"># discard working dir changes</span>',
+            '<span class="c-cmd">git restore</span> <span class="c-flag">--staged</span> <span class="c-path">file.txt</span> <span class="c-comment"># unstage a file</span>',
+            '<span class="c-cmd">git restore</span> <span class="c-path">.</span>              <span class="c-comment"># discard ALL working changes</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'danger',
+          title: '⚠️ DESTRUCTIVE for working dir!',
+          text: '<code>git restore file.txt</code> permanently discards unsaved changes from working directory. Staged files are safe. Committed files are ALWAYS safe.'
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Old vs New commands',
+          text: 'Pehle <code>git checkout -- file</code> use hota tha. Ab <code>git restore</code> modern way hai. Dono kaam karte hain, par <code>restore</code> zyada clear hai.'
+        },
+        {
+          type: 'task',
+          text: '👇 Try <code>git restore index.js</code> then <code>git restore --staged index.js</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 7: git rm & git mv
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-rm-mv',
+    title: 'git rm & git mv',
+    icon: '🗑️',
+    filename: 'git-rm-mv.md',
+    group: 'Basics',
+    xp: 80,
+    emoji: '🗑️',
+    completionMsg: 'File management master! rm aur mv ka use aa gaya 📁',
+    requiredCmds: ['git rm', 'git mv'],
+    content: () => renderLesson({
+      badge: 'MISSION 08 · BASICS',
+      title: 'git rm & git mv',
+      xp: 80,
+      objective: 'Try <code>git rm --cached secret.txt</code> and understand git mv.',
+      sections: [
+        { type: 'comment', text: '// git rm / git mv — Remove and move tracked files' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git rm</span> <span class="c-path">file.txt</span>           <span class="c-comment"># delete + stage removal</span>',
+            '<span class="c-cmd">git rm</span> <span class="c-flag">--cached</span> <span class="c-path">file.txt</span>  <span class="c-comment"># untrack but keep file</span>',
+            '<span class="c-cmd">git rm</span> <span class="c-flag">-r</span> <span class="c-path">folder/</span>       <span class="c-comment"># recursively remove folder</span>',
+            '',
+            '<span class="c-cmd">git mv</span> <span class="c-path">old.js</span> <span class="c-path">new.js</span>    <span class="c-comment"># rename/move + stage</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'warning',
+          title: '🔑 Most Important Use Case',
+          text: 'Accidentally pushed <code>.env</code> or <code>secrets.txt</code>?<br><code>git rm --cached .env</code> → add to <code>.gitignore</code> → commit<br><br>Ye file ab tracked nahi hogi. But <strong>already in history hai</strong> — use <code>git filter-branch</code> ya BFG Repo Cleaner for that!'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #3 — $3,000 AWS Bill Raat Mein',
+          text: `Ek developer ne apna Django project GitHub pe push kiya. Khush tha — pehla open source project!<br><br>
+<code>settings.py</code> mein tha:<br>
+<span style="color:#f44747">AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"</span><br>
+<span style="color:#f44747">AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"</span><br><br>
+Push hua 11 PM. Subah 7 AM pe AWS ka email aaya:<br>
+<em style="color:#ffd700">"Your account has been charged $2,847.32 overnight."</em><br><br>
+Bots continuously GitHub scan karte hain AWS keys ke liye. <strong>Minutes mein milti hai key, aur EC2 mine karna shuru ho jaata hai.</strong><br><br>
+Developer ne immediately key revoke ki. AWS ne partial refund diya (pehli baar ke liye). Lekin GitHub history mein key thi — isliye BFG Repo Cleaner se poori history clean karni padi.<br><br>
+<strong>Rule:</strong> <code>.env</code> KABHI BHI push nahi hoti. <code>.gitignore</code> mein pehle din add karo.<br>
+<span style="color:#4ec9b0">✅ .env  ← local secrets</span><br>
+<span style="color:#4ec9b0">✅ .env.example  ← template (safe to push, no real values)</span>`
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git rm --cached secret.txt</code> or <code>git mv index.js app.js</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 8: branches
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'branches',
+    title: 'git branch',
+    icon: '🌿',
+    filename: 'git-branch.md',
+    group: 'Branching',
+    xp: 120,
+    emoji: '🌿',
+    completionMsg: 'Branch master! Parallel universe create karna aa gaya 🌿',
+    requiredCmds: ['git branch', 'git branch new-feature'],
+    content: () => renderLesson({
+      badge: 'MISSION 09 · BRANCHING',
+      title: 'git branch — Parallel Universes',
+      xp: 120,
+      objective: 'List branches with <code>git branch</code>, then create: <code>git branch new-feature</code>',
+      sections: [
+        { type: 'comment', text: '// git branch — List, create, delete branches' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git branch</span>                  <span class="c-comment"># list local branches</span>',
+            '<span class="c-cmd">git branch</span> <span class="c-flag">-a</span>              <span class="c-comment"># list all (local + remote)</span>',
+            '<span class="c-cmd">git branch</span> <span class="c-branch">new-feature</span>     <span class="c-comment"># create branch (stay here)</span>',
+            '<span class="c-cmd">git branch</span> <span class="c-flag">-d</span> <span class="c-branch">old-branch</span>  <span class="c-comment"># delete branch (safe)</span>',
+            '<span class="c-cmd">git branch</span> <span class="c-flag">-D</span> <span class="c-branch">old-branch</span>  <span class="c-comment"># force delete</span>',
+            '<span class="c-cmd">git branch</span> <span class="c-flag">-m</span> <span class="c-branch">old</span> <span class="c-branch">new</span>     <span class="c-comment"># rename branch</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🌳 Branch Model — Team Mein Kaise Kaam Hota Hai',
+          text: '<code>main</code> = production code (sacred 🙏)<br><code>develop</code> = integration branch<br><code>feature/xxx</code> = new features<br><code>hotfix/xxx</code> = emergency fixes<br><code>release/xxx</code> = release prep<br><br>Seedha main pe commit = team mein dushman ban jaoge 😂'
+        },
+        {
+          type: 'task',
+          text: '👇 Run <code>git branch</code> to list branches, then <code>git branch new-feature</code> to create one!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 9: checkout + switch
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-checkout-switch',
+    title: 'git checkout & git switch',
+    icon: '🔀',
+    filename: 'git-checkout.md',
+    group: 'Branching',
+    xp: 100,
+    emoji: '🔀',
+    completionMsg: 'Branch hopping! Ek universe se doosre mein kood sakta hai ab tu 🏃',
+    requiredCmds: ['git checkout new-feature', 'git switch main'],
+    content: () => renderLesson({
+      badge: 'MISSION 10 · BRANCHING',
+      title: 'git checkout & switch — Branch Badlo',
+      xp: 100,
+      objective: 'Switch to new-feature: <code>git checkout new-feature</code>, then back: <code>git switch main</code>',
+      sections: [
+        { type: 'comment', text: '// git checkout / git switch — Navigate between branches' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-comment"># Modern way (Git 2.23+)</span>',
+            '<span class="c-cmd">git switch</span> <span class="c-branch">main</span>             <span class="c-comment"># switch to main</span>',
+            '<span class="c-cmd">git switch</span> <span class="c-flag">-c</span> <span class="c-branch">feature/login</span>  <span class="c-comment"># create + switch</span>',
+            '',
+            '<span class="c-comment"># Old way (still valid)</span>',
+            '<span class="c-cmd">git checkout</span> <span class="c-branch">main</span>           <span class="c-comment"># switch to branch</span>',
+            '<span class="c-cmd">git checkout</span> <span class="c-flag">-b</span> <span class="c-branch">new-branch</span>   <span class="c-comment"># create + switch</span>',
+            '<span class="c-cmd">git checkout</span> <span class="c-hash">a1b2c3d</span>       <span class="c-comment"># detached HEAD (time travel!)</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'info',
+          title: 'Detached HEAD state',
+          text: '<code>git checkout a1b2c3d</code> puts you in "detached HEAD". You can look around but don\'t commit! Run <code>git switch main</code> to come back safely.'
+        },
+        {
+          type: 'task',
+          text: '👇 Try <code>git checkout new-feature</code> then <code>git switch main</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 10: git merge
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-merge',
+    title: 'git merge',
+    icon: '🤝',
+    filename: 'git-merge.md',
+    group: 'Branching',
+    xp: 140,
+    emoji: '🤝',
+    completionMsg: 'Merge complete! Features ek ho gaye bhai 🤝',
+    requiredCmds: ['git merge new-feature'],
+    content: () => renderLesson({
+      badge: 'MISSION 11 · BRANCHING',
+      title: 'git merge — Branches Jodo',
+      xp: 140,
+      objective: 'Merge new-feature into main: <code>git merge new-feature</code>',
+      sections: [
+        { type: 'comment', text: '// git merge — Join two branches together' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-comment"># First switch to the target branch</span>',
+            '<span class="c-cmd">git switch</span> <span class="c-branch">main</span>',
+            '<span class="c-cmd">git merge</span> <span class="c-branch">feature/login</span>       <span class="c-comment"># merge feature into main</span>',
+            '<span class="c-cmd">git merge</span> <span class="c-flag">--no-ff</span> <span class="c-branch">feature</span>   <span class="c-comment"># always create merge commit</span>',
+            '<span class="c-cmd">git merge</span> <span class="c-flag">--squash</span> <span class="c-branch">feature</span>  <span class="c-comment"># squash all commits to one</span>',
+            '<span class="c-cmd">git merge</span> <span class="c-flag">--abort</span>           <span class="c-comment"># abort if conflict</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'danger',
+          title: '⚔️ Merge Conflicts',
+          text: 'Conflict markers in file:<br><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</code>  ← your code<br><code>=======</code><br><code>&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/login</code>  ← incoming<br><br>Edit file → keep correct code → <code>git add</code> → <code>git commit</code>. Ghabrana nahi hai — yeh normal hai!'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #4 — The Conflict That Deleted the Database',
+          text: `Team mein do developers the. Dono ne <code>db/migrations/</code> folder mein same time pe kaam kiya.<br><br>
+Merge conflict aaya. Junior developer ne socha: <em>"Dono versions mein se ek choose karna hai."</em><br><br>
+<span style="color:#f44747">Us ne "incoming" version rakha — apna wala delete kar diya.</span><br><br>
+Problem? "Incoming" version mein <code>DROP TABLE users;</code> tha jo test DB ke liye likha tha.<br><br>
+Production pe merge push hua. Auto-deploy chala. Migration chali.<br>
+<span style="color:#ffd700">💥 3 lakh users ka data delete ho gaya. 2 seconds mein.</span><br><br>
+Backup tha — 6 hours purana. 6 ghante ka data permanently gone.<br><br>
+<strong>Lesson:</strong><br>
+✅ Conflict resolve karte waqt <strong>dono sides padho carefully</strong><br>
+✅ <code>git diff</code> se pehle dekho kya aa raha hai<br>
+✅ Migration conflicts pe always senior se poochho<br>
+✅ Database backups = production mein har ghante 🙏`
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Fast-forward vs 3-way merge',
+          text: '<strong>Fast-forward</strong>: main ne koi commit nahi kiya jab se branch bani. Git simply pointer move kar deta hai. Clean! ✅<br><strong>3-way merge</strong>: Dono branches aage gayi. Git ek merge commit banata hai. Normal hai!'
+        },
+        {
+          type: 'task',
+          text: '👇 Run <code>git merge new-feature</code> to merge the branch!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 11: git remote + push + pull
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-remote-push-pull',
+    title: 'git remote, push & pull',
+    icon: '☁️',
+    filename: 'git-remote.md',
+    group: 'Remote',
+    xp: 150,
+    emoji: '☁️',
+    completionMsg: 'Cloud connected! Teri code duniya se connect ho gayi ☁️',
+    requiredCmds: ['git remote add origin https://github.com/user/repo.git', 'git push', 'git pull'],
+    content: () => renderLesson({
+      badge: 'MISSION 12 · REMOTE',
+      title: 'Remote, Push & Pull',
+      xp: 150,
+      objective: 'Add a remote, push, and pull.',
+      sections: [
+        { type: 'comment', text: '// git remote / push / pull — Work with remote repositories' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git remote</span> <span class="c-flag">-v</span>                                  <span class="c-comment"># list remotes</span>',
+            '<span class="c-cmd">git remote add</span> <span class="c-branch">origin</span> <span class="c-string">https://github.com/user/repo.git</span>',
+            '',
+            '<span class="c-cmd">git push</span> <span class="c-flag">-u</span> <span class="c-branch">origin main</span>        <span class="c-comment"># first push (set upstream)</span>',
+            '<span class="c-cmd">git push</span>                        <span class="c-comment"># subsequent pushes</span>',
+            '<span class="c-cmd">git push</span> <span class="c-flag">--force-with-lease</span>  <span class="c-comment"># safe force push</span>',
+            '',
+            '<span class="c-cmd">git pull</span>                        <span class="c-comment"># fetch + merge</span>',
+            '<span class="c-cmd">git pull</span> <span class="c-flag">--rebase</span>            <span class="c-comment"># fetch + rebase (cleaner)</span>',
+            '<span class="c-cmd">git fetch</span>                       <span class="c-comment"># download only, no merge</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'warning',
+          title: '⚠️ Rule: Pull before Push!',
+          text: 'Always <code>git pull</code> before <code>git push</code>. Warna push reject hoga — "remote contains work that you do not have".'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #5 — git push --force ne 2 Din ka Kaam Delete Kiya',
+          text: `Startup mein release day tha. Pressure tha. Developer A ne apni branch se main pe push kiya, error aaya:<br><br>
+<span style="color:#f44747">! [rejected] main → main (non-fast-forward)</span><br>
+<span style="color:#f44747">hint: Updates were rejected because the remote contains work</span><br><br>
+Developer A ne socha: <em>"Pull karna time waste hai, release hai aaj."</em><br><br>
+<span style="color:#f44747">$ git push --force origin main</span><br>
+<span style="color:#f44747">+ a1b2c3d...z9y8x7w main → main (forced update)</span><br><br>
+Developer B ka 2 din ka kaam — payment gateway integration — <strong>GitHub history se wipe ho gaya.</strong><br><br>
+Developer B ne pull kiya: <em>"Mera saara kaam kahan gaya?!"</em><br><br>
+<code>git reflog</code> se recover karna pada. 4 ghante ki extra mehnat.<br>
+Release 6 ghante delay. Client angry. Manager angry. Sab angry.<br><br>
+<strong>Golden Rules:</strong><br>
+❌ <code>git push --force</code> = team ka dushman on shared branches<br>
+✅ <code>git push --force-with-lease</code> = safe version (fails if someone else pushed)<br>
+✅ Pull karo, conflicts resolve karo, phir push karo. Hamesha.`
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 fetch vs pull',
+          text: '<code>git fetch</code> = sirf download, merge nahi. Safe hai. Pehle dekho kya aaya.<br><code>git pull</code> = fetch + merge. Turant changes aa jaate hain.'
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git remote add origin https://github.com/user/repo.git</code>, then <code>git push</code>, then <code>git pull</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 12: git clone
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-clone',
+    title: 'git clone',
+    icon: '📥',
+    filename: 'git-clone.md',
+    group: 'Remote',
+    xp: 80,
+    emoji: '📥',
+    completionMsg: 'Clone expert! Kisi bhi repo ka copy bana sakta hai tu 📥',
+    requiredCmds: ['git clone https://github.com/torvalds/linux.git'],
+    content: () => renderLesson({
+      badge: 'MISSION 13 · REMOTE',
+      title: 'git clone — Copy Karo',
+      xp: 80,
+      objective: 'Clone a repo: <code>git clone https://github.com/torvalds/linux.git</code>',
+      sections: [
+        { type: 'comment', text: '// git clone — Clone a repository' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git clone</span> <span class="c-string">https://github.com/user/repo.git</span>',
+            '<span class="c-cmd">git clone</span> <span class="c-string">https://…</span> <span class="c-path">my-folder</span>   <span class="c-comment"># clone into custom dir</span>',
+            '<span class="c-cmd">git clone</span> <span class="c-flag">--depth=1</span> <span class="c-string">https://…</span>   <span class="c-comment"># shallow clone (faster!)</span>',
+            '<span class="c-cmd">git clone</span> <span class="c-flag">--branch</span> <span class="c-branch">dev</span> <span class="c-string">url</span>   <span class="c-comment"># clone specific branch</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Horror Story — Linux Kernel Clone',
+          text: 'Kisi ne <code>git clone https://github.com/torvalds/linux.git</code> kiya bina <code>--depth=1</code> ke. 4GB download. 1 hour wait. Phir realize kiya sirf README padhna tha 😂<br><br>Tip: Open source explore karne ke liye <code>--depth=1</code> use karo!'
+        },
+        {
+          type: 'task',
+          text: '👇 Clone the Linux kernel (simulated): <code>git clone https://github.com/torvalds/linux.git</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 13: git reset
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-reset',
+    title: 'git reset (soft/hard)',
+    icon: '⏪',
+    filename: 'git-reset.md',
+    group: 'Undoing',
+    xp: 150,
+    emoji: '⏪',
+    completionMsg: 'Reset guru! History rewrite karna aa gaya. Careful use karna bhai ⚠️',
+    requiredCmds: ['git reset --soft HEAD~1', 'git reset --hard HEAD~1'],
+    content: () => renderLesson({
+      badge: 'MISSION 14 · UNDOING',
+      title: 'git reset — Time Travel ⚠️',
+      xp: 150,
+      objective: 'Try soft reset: <code>git reset --soft HEAD~1</code>, then hard: <code>git reset --hard HEAD~1</code>',
+      sections: [
+        { type: 'comment', text: '// git reset — Reset current HEAD to the specified state' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'Three modes of reset:' },
+            { t: 'blank' },
+            { t: 'text', text: '  <span class="c-ok">--soft </span>  Undo commit. Changes go to STAGING. Files safe ✅' },
+            { t: 'text', text: '  <span class="c-warn">--mixed</span>  Undo commit + unstage. Changes in working dir ⚠️' },
+            { t: 'text', text: '  <span class="c-err">--hard </span>  Undo commit + DELETE changes. GONE FOREVER 💀' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git reset</span> <span class="c-flag">--soft</span>  <span class="c-hash">HEAD~1</span>   <span class="c-comment"># undo last commit, keep staged</span>',
+            '<span class="c-cmd">git reset</span> <span class="c-flag">--mixed</span> <span class="c-hash">HEAD~1</span>   <span class="c-comment"># undo commit + unstage (default)</span>',
+            '<span class="c-cmd">git reset</span> <span class="c-flag">--hard</span>  <span class="c-hash">HEAD~1</span>   <span class="c-comment"># DANGER: delete changes 💀</span>',
+            '<span class="c-cmd">git reset</span> <span class="c-flag">--hard</span>  <span class="c-hash">origin/main</span> <span class="c-comment"># reset to remote state</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'danger',
+          title: '💀 NEVER on shared branches!',
+          text: '<code>git reset</code> rewrites history. If you\'ve pushed, teammates\' repos will diverge. Use <code>git revert</code> for public commits instead. Golden rule: reset = local only!'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #6 — git reset --hard aur 1 Hafte ka Kaam Gone',
+          text: `Ek intern apni feature branch pe kaam kar raha tha. Confusing state mein aa gaya — staged files, modified files, sab ulajha hua.<br><br>
+Stack Overflow pe solution mila: <em>"Just run git reset --hard HEAD to clean everything up"</em><br><br>
+<span style="color:#f44747">$ git reset --hard HEAD</span><br>
+<span style="color:#f44747">HEAD is now at a1b2c3d Initial commit</span><br><br>
+<strong style="color:#ffd700">💥 1 hafte ka kaam — 47 modified files — permanently deleted.</strong><br><br>
+Koi commit nahi tha. Koi stash nahi tha. Reflog mein sirf HEAD tha — koi working dir changes nahi.<br><br>
+<code>git reset --hard</code> working directory changes ko recycle bin mein bhi nahi dalta — <strong>seedha void mein jaate hain.</strong><br><br>
+Intern ne roya (literally). Manager ne samjhaya. Kaam dobara karna pada.<br><br>
+<strong>Safe alternatives:</strong><br>
+✅ Changes temporarily hatani hain? → <code>git stash</code><br>
+✅ Last commit undo karna hai, changes rakhni hain? → <code>git reset --soft HEAD~1</code><br>
+✅ Sirf unstage karna hai? → <code>git restore --staged .</code><br>
+❌ <code>git reset --hard</code> = nuclear option. Only when you're 100% sure.`
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Rescue from --hard',
+          text: 'Accidentally did <code>--hard</code>? Bhai ghabrana nahi! <code>git reflog</code> mein sab records hote hain. Hash dhundho, <code>git checkout &lt;hash&gt;</code> karo. Data wapas aa sakta hai!'
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git reset --soft HEAD~1</code> then <code>git reset --hard HEAD~1</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 14: git revert
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-revert',
+    title: 'git revert',
+    icon: '🔙',
+    filename: 'git-revert.md',
+    group: 'Undoing',
+    xp: 120,
+    emoji: '🔙',
+    completionMsg: 'Safe undo! Public repos mein sahi tarike se revert karna aa gaya 👍',
+    requiredCmds: ['git revert HEAD'],
+    content: () => renderLesson({
+      badge: 'MISSION 15 · UNDOING',
+      title: 'git revert — Safe Undo',
+      xp: 120,
+      objective: 'Safely revert last commit: <code>git revert HEAD</code>',
+      sections: [
+        { type: 'comment', text: '// git revert — Create a new commit that undoes changes' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'revert vs reset:' },
+            { t: 'blank' },
+            { t: 'text', text: '  <span class="c-ok">revert</span>: Creates NEW commit that undoes changes. History preserved.' },
+            { t: 'text', text: '  <span class="c-err">reset </span>: Moves HEAD back. History rewritten. Dangerous on shared repos.' },
+            { t: 'blank' },
+            { t: 'text', text: '  Rule: Use revert for PUBLIC commits, reset for LOCAL commits.' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git revert</span> <span class="c-hash">HEAD</span>           <span class="c-comment"># revert last commit</span>',
+            '<span class="c-cmd">git revert</span> <span class="c-hash">a1b2c3d</span>       <span class="c-comment"># revert specific commit</span>',
+            '<span class="c-cmd">git revert</span> <span class="c-flag">--no-commit</span> <span class="c-hash">HEAD</span> <span class="c-comment"># revert but don\'t auto-commit</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Real World Example',
+          text: 'Production mein ek bug gaya. Commit <code>a1b2c3d</code> ne todha.<br><code>git revert a1b2c3d</code> → new commit → push → deploy.<br>History clean. Team ko pata chal gaya kya hua. Professional! 💼'
+        },
+        {
+          type: 'task',
+          text: '👇 Revert last commit safely: <code>git revert HEAD</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 15: git amend
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-amend',
+    title: 'git commit --amend',
+    icon: '✏️',
+    filename: 'git-amend.md',
+    group: 'Undoing',
+    xp: 100,
+    emoji: '✏️',
+    completionMsg: 'Amend pro! Typos aur commit message theek karna aa gaya ✏️',
+    requiredCmds: ['git commit --amend --no-edit', 'git commit --amend -m "fix: better message"'],
+    content: () => renderLesson({
+      badge: 'MISSION 16 · UNDOING',
+      title: 'git commit --amend — Last Commit Edit',
+      xp: 100,
+      objective: 'Fix last commit message: <code>git commit --amend -m "fix: better message"</code>',
+      sections: [
+        { type: 'comment', text: '// git commit --amend — Modify the last commit' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git commit</span> <span class="c-flag">--amend</span> <span class="c-flag">--no-edit</span>       <span class="c-comment"># add staged changes to last commit</span>',
+            '<span class="c-cmd">git commit</span> <span class="c-flag">--amend</span> <span class="c-flag">-m</span> <span class="c-string">"new msg"</span>  <span class="c-comment"># change last commit message</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'warning',
+          title: '⚠️ Only amend LOCAL commits!',
+          text: 'Amend rewrites the last commit hash. If you\'ve pushed it, <strong>don\'t amend</strong>. It will cause conflicts for teammates. Only amend before pushing!'
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Common use case',
+          text: 'Commit kiya, phir socha "ek file toh bhuul gayi yaar!"<br><code>git add forgotten-file.js</code><br><code>git commit --amend --no-edit</code><br>Previous commit mein file add ho gayi. Clean history! ✨'
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git commit --amend --no-edit</code> then <code>git commit --amend -m "fix: better message"</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 16: git stash
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-stash',
+    title: 'git stash & stash pop',
+    icon: '💼',
+    filename: 'git-stash.md',
+    group: 'Advanced',
+    xp: 140,
+    emoji: '💼',
+    completionMsg: 'Stash ninja! Emergency switch karna aa gaya bina commit kiye 💼',
+    requiredCmds: ['git stash', 'git stash pop'],
+    content: () => renderLesson({
+      badge: 'MISSION 17 · ADVANCED',
+      title: 'git stash — Pocket Mein Rakh',
+      xp: 140,
+      objective: 'Stash changes: <code>git stash</code>, then restore: <code>git stash pop</code>',
+      sections: [
+        { type: 'comment', text: '// git stash — Temporarily save uncommitted changes' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git stash</span>                      <span class="c-comment"># stash all changes</span>',
+            '<span class="c-cmd">git stash</span> <span class="c-flag">save</span> <span class="c-string">"wip: login"</span>  <span class="c-comment"># stash with name</span>',
+            '<span class="c-cmd">git stash list</span>                 <span class="c-comment"># show all stashes</span>',
+            '<span class="c-cmd">git stash pop</span>                  <span class="c-comment"># apply + drop latest</span>',
+            '<span class="c-cmd">git stash apply stash@{1}</span>      <span class="c-comment"># apply specific stash</span>',
+            '<span class="c-cmd">git stash drop</span>                 <span class="c-comment"># delete latest stash</span>',
+            '<span class="c-cmd">git stash clear</span>                <span class="c-comment"># delete ALL stashes ⚠️</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Classic Emergency Scenario',
+          text: 'Tu feature pe kaam kar raha hai (half done). Boss ka call: "YEH PRODUCTION BUG FIX KAR AB!"<br><br>✅ <code>git stash</code> → changes pocket mein<br>✅ <code>git switch main</code> → bug fix karo<br>✅ <code>git push</code> → deploy<br>✅ <code>git switch feature</code><br>✅ <code>git stash pop</code> → wapas kaam pe<br><br>Life saved! 🎉'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #8 — git stash clear aur 3 Din ka Kaam Vanish',
+          text: `Developer 3 din se payment gateway integration pe kaam kar raha tha. Complex code — Razorpay webhooks, order state machine, refund logic.<br><br>
+Ek din frustrated ho gaya — too many stashes in list:<br><br>
+<span style="color:#858585">$ git stash list</span><br>
+<span style="color:#858585">stash@{0}: WIP on feature/payment: half done</span><br>
+<span style="color:#858585">stash@{1}: WIP on feature/payment: razorpay webhooks</span><br>
+<span style="color:#858585">stash@{2}: WIP on feature/payment: refund logic</span><br>
+<span style="color:#858585">stash@{3}: WIP on main: old experiment</span><br><br>
+Developer ne socha: "yeh purana stash@{3} delete karta hoon."<br>
+Galti se typed:<br>
+<span style="color:#f44747">$ git stash clear</span><br>
+<span style="color:#f44747"># (no output, no confirmation, no undo)</span><br><br>
+<strong style="color:#ffd700">Teenon stashes — 3 din ka kaam — permanently gone. 💀</strong><br><br>
+<code>git stash clear</code> koi warning nahi deta. Koi confirmation nahi. Seedha delete.<br><br>
+<strong>Lessons:</strong><br>
+✅ Stash save karte waqt naam do: <code>git stash save "razorpay webhook handler"</code><br>
+✅ Important kaam stash mein nahi rakhte — commit karo (WIP commit bhi theek hai)<br>
+✅ <code>git stash drop stash@{3}</code> = specific stash delete (safe)<br>
+❌ <code>git stash clear</code> = sab uda do (nuclear)`
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git stash</code> to save changes, then <code>git stash pop</code> to restore!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 17: git cherry-pick
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-cherry-pick',
+    title: 'git cherry-pick',
+    icon: '🍒',
+    filename: 'git-cherry-pick.md',
+    group: 'Advanced',
+    xp: 150,
+    emoji: '🍒',
+    completionMsg: 'Cherry-pick master! Specific commits kisi bhi branch pe le ja sakta hai! 🍒',
+    requiredCmds: ['git cherry-pick a1b2c3d'],
+    content: () => renderLesson({
+      badge: 'MISSION 18 · ADVANCED',
+      title: 'git cherry-pick — Best Commit Chuno',
+      xp: 150,
+      objective: 'Cherry-pick a commit: <code>git cherry-pick a1b2c3d</code>',
+      sections: [
+        { type: 'comment', text: '// git cherry-pick — Apply commits from another branch' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'What is cherry-pick?' },
+            { t: 'blank' },
+            { t: 'text', text: '  Copy a specific commit from any branch onto current branch.' },
+            { t: 'text', text: '  The commit gets a NEW hash (it\'s a copy, not a move).' },
+            { t: 'blank' },
+            { t: 'text', text: '  Use case: A fix in develop branch, needs in hotfix branch.' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git cherry-pick</span> <span class="c-hash">a1b2c3d</span>           <span class="c-comment"># pick one commit</span>',
+            '<span class="c-cmd">git cherry-pick</span> <span class="c-hash">a1b2c3d</span> <span class="c-hash">b2c3d4e</span> <span class="c-comment"># pick multiple</span>',
+            '<span class="c-cmd">git cherry-pick</span> <span class="c-hash">a1b2..b2c3</span>        <span class="c-comment"># pick a range</span>',
+            '<span class="c-cmd">git cherry-pick</span> <span class="c-flag">--no-commit</span> <span class="c-hash">hash</span>  <span class="c-comment"># pick without committing</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🍒 Real World Use Case',
+          text: 'Feature branch pe kaam kar raha tha. Ek critical bug fix commit tha <code>fix: security patch</code>. Production branch pe toh yeh chahiye tha turant!<br><br><code>git switch production</code><br><code>git cherry-pick &lt;bug-fix-hash&gt;</code><br><br>Done! Bina poora feature merge kiye sirf fix mila! 🎯'
+        },
+        {
+          type: 'task',
+          text: '👇 Cherry-pick the commit: <code>git cherry-pick a1b2c3d</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 18: git rebase
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-rebase',
+    title: 'git rebase & rebase -i',
+    icon: '🔮',
+    filename: 'git-rebase.md',
+    group: 'Advanced',
+    xp: 200,
+    emoji: '🔮',
+    completionMsg: 'Rebase wizard! History manipulate karna aa gaya — with great power comes great responsibility 🔮',
+    requiredCmds: ['git rebase main', 'git rebase -i HEAD~3'],
+    content: () => renderLesson({
+      badge: 'MISSION 19 · ADVANCED',
+      title: 'git rebase & Interactive Rebase',
+      xp: 200,
+      objective: 'Try: <code>git rebase main</code>, then interactive: <code>git rebase -i HEAD~3</code>',
+      sections: [
+        { type: 'comment', text: '// git rebase — Reapply commits on top of another base' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git rebase</span> <span class="c-branch">main</span>            <span class="c-comment"># rebase onto main</span>',
+            '<span class="c-cmd">git rebase</span> <span class="c-flag">--abort</span>         <span class="c-comment"># cancel if conflict</span>',
+            '<span class="c-cmd">git rebase</span> <span class="c-flag">--continue</span>       <span class="c-comment"># continue after resolving</span>',
+            '',
+            '<span class="c-comment"># Interactive rebase — rewrite history</span>',
+            '<span class="c-cmd">git rebase</span> <span class="c-flag">-i</span> <span class="c-hash">HEAD~3</span>      <span class="c-comment"># edit last 3 commits</span>',
+            '<span class="c-comment"># Commands: pick, reword, edit, squash, fixup, drop</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'danger',
+          title: '🚨 Golden Rule of Rebasing',
+          text: 'NEVER rebase a branch that has been pushed to a shared remote. Rebasing rewrites history. Teammates will get diverged repos. Only rebase your LOCAL commits before pushing!'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #7 — git rebase pe Team Barbaad',
+          text: `5 developer ki team. Sab <code>develop</code> branch use karte the as shared branch.<br><br>
+Ek senior developer ne socha: "develop branch ki history messy hai, clean kar deta hoon."<br><br>
+<span style="color:#f44747">$ git checkout develop</span><br>
+<span style="color:#f44747">$ git rebase -i HEAD~20  # "clean up" last 20 commits</span><br>
+<span style="color:#f44747">$ git push --force origin develop</span><br><br>
+Next morning. Team ke 4 developers ne <code>git pull</code> kiya:<br><br>
+<span style="color:#f44747">error: Your local branch and the remote have diverged</span><br>
+<span style="color:#f44747">hint: use 'git pull --rebase' to rebase</span><br><br>
+<strong style="color:#ffd700">Har kisi ki local develop branch ab completely different history thi.</strong><br><br>
+2 ghante ki meeting. Har developer ko manually apna kaam naye commits pe reapply karna pada. 3 merge conflicts. 1 developer ka kaam partially lost.<br><br>
+Senior developer: <em>"Maine sirf history clean karna chahata tha yaar..."</em><br>
+Team: <em>😡😡😡</em><br><br>
+<strong>Rule — tattoo karwa lo:</strong><br>
+❌ Shared branches pe rebase = NEVER<br>
+✅ Apni local feature branch pe rebase = SAFE<br>
+✅ Already pushed? → Use <code>git revert</code> instead`
+        },
+        {
+          type: 'callout', kind: 'info',
+          title: 'Interactive Rebase Commands',
+          text: '<code>pick</code> = keep commit  |  <code>reword</code> = change message  |  <code>squash</code> = combine with previous<br><code>fixup</code> = squash, discard message  |  <code>drop</code> = delete commit  |  <code>edit</code> = pause to amend'
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🇮🇳 Rebase vs Merge — Kab Kya?',
+          text: 'Working alone pe feature branch? → <code>git pull --rebase</code> — clean linear history ✅<br>Team shared branch? → <code>git merge</code> — preserve history, safer ✅<br>PR bhejne se pehle? → <code>git rebase -i</code> se messy commits squash karo ✅'
+        },
+        {
+          type: 'task',
+          text: '👇 Try <code>git rebase main</code> then <code>git rebase -i HEAD~3</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 19: git tag
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-tag',
+    title: 'git tag',
+    icon: '🏷️',
+    filename: 'git-tag.md',
+    group: 'Advanced',
+    xp: 100,
+    emoji: '🏷️',
+    completionMsg: 'Tagged! Versions properly mark karna aa gaya release ke liye 🏷️',
+    requiredCmds: ['git tag v1.0.0', 'git tag -a v1.0.0 -m "Release v1.0.0"'],
+    content: () => renderLesson({
+      badge: 'MISSION 20 · ADVANCED',
+      title: 'git tag — Version Marks',
+      xp: 100,
+      objective: 'Create a tag: <code>git tag v1.0.0</code> then annotated: <code>git tag -a v1.0.0 -m "Release v1.0.0"</code>',
+      sections: [
+        { type: 'comment', text: '// git tag — Create, list, delete tags' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git tag</span>                              <span class="c-comment"># list all tags</span>',
+            '<span class="c-cmd">git tag</span> <span class="c-branch">v1.0.0</span>                      <span class="c-comment"># lightweight tag</span>',
+            '<span class="c-cmd">git tag</span> <span class="c-flag">-a</span> <span class="c-branch">v1.0.0</span> <span class="c-flag">-m</span> <span class="c-string">"Release v1.0"</span> <span class="c-comment"># annotated tag</span>',
+            '<span class="c-cmd">git push origin</span> <span class="c-branch">v1.0.0</span>             <span class="c-comment"># push specific tag</span>',
+            '<span class="c-cmd">git push origin</span> <span class="c-flag">--tags</span>             <span class="c-comment"># push all tags</span>',
+            '<span class="c-cmd">git tag</span> <span class="c-flag">-d</span> <span class="c-branch">v1.0.0</span>                  <span class="c-comment"># delete tag</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'info',
+          title: 'Lightweight vs Annotated',
+          text: '<strong>Lightweight</strong>: Just a pointer to a commit. Like a bookmark.<br><strong>Annotated</strong>: Full object with tagger, date, message. Use for releases! GitHub creates release pages from annotated tags.'
+        },
+        {
+          type: 'task',
+          text: '👇 Create tags: <code>git tag v1.0.0</code> then <code>git tag -a v1.0.0 -m "Release v1.0.0"</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 20: git reflog
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-reflog',
+    title: 'git reflog',
+    icon: '🔭',
+    filename: 'git-reflog.md',
+    group: 'Advanced',
+    xp: 150,
+    emoji: '🔭',
+    completionMsg: 'Reflog hero! Ab koi bhi data permanently delete nahi hoga tere liye 🔭',
+    requiredCmds: ['git reflog'],
+    content: () => renderLesson({
+      badge: 'MISSION 21 · ADVANCED',
+      title: 'git reflog — Git Ka Black Box',
+      xp: 150,
+      objective: 'View reflog: <code>git reflog</code>',
+      sections: [
+        { type: 'comment', text: '// git reflog — Reference log — record of ALL HEAD movements' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'What is reflog?' },
+            { t: 'blank' },
+            { t: 'text', text: '  Reflog records every movement of HEAD — even resets, rebases,' },
+            { t: 'text', text: '  checkouts, commits. Kept for 90 days by default.' },
+            { t: 'blank' },
+            { t: 'text', text: '  Even if you git reset --hard, the original commit is in reflog.' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git reflog</span>                       <span class="c-comment"># show all HEAD movements</span>',
+            '<span class="c-cmd">git reflog</span> <span class="c-flag">show</span> <span class="c-branch">main</span>           <span class="c-comment"># reflog of main branch</span>',
+            '',
+            '<span class="c-comment"># Rescue after accidental reset:</span>',
+            '<span class="c-cmd">git reflog</span>                       <span class="c-comment"># find the lost hash</span>',
+            '<span class="c-cmd">git checkout</span> <span class="c-hash">a1b2c3d</span>          <span class="c-comment"># go back to it</span>',
+            '<span class="c-cmd">git branch</span> <span class="c-branch">recovery</span>            <span class="c-comment"># save as new branch</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🚑 Emergency Rescue Story',
+          text: 'Bhai ne <code>git reset --hard HEAD~5</code> kar diya galti se. 5 commits gone. Panic!<br><br><code>git reflog</code> → ek hash mila: <code>HEAD@{3}: before reset</code><br><code>git checkout HEAD@{3}</code> → sab kuch wapas!<br><br>Reflog = Git ka kala jaadu 🧙 Kabhi delete mat karna!'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #10 — Reflog ne Bachaya 2 Hafte ka ML Kaam',
+          text: `ML engineer ne apna model training code khatam kiya. Bahut khush tha.<br>
+Ek "cleanup" karne ke liye:<br><br>
+<span style="color:#f44747">$ git checkout main   # switch branches</span><br>
+<span style="color:#f44747">$ git branch -D feature/model-v2  # "I don't need this anymore"</span><br><br>
+5 minute baad realize hua: model-v2 branch mein 2 hafte ka kaam tha jo main mein merge NAHI hua tha.<br><br>
+<strong style="color:#ffd700">Branch delete. Commits "orphaned". Technically accessible nahi. 💀</strong><br><br>
+Par reflog ne bachaya:<br><br>
+<span style="color:#4ec9b0">$ git reflog</span><br>
+<span style="color:#4ec9b0">a1b2c3d HEAD@{0}: checkout: moving from feature/model-v2 to main</span><br>
+<span style="color:#4ec9b0">f3e2d1c HEAD@{1}: commit: feat: add transformer architecture</span><br><br>
+<span style="color:#4ec9b0">$ git checkout -b feature/model-v2-restored f3e2d1c</span><br>
+<span style="color:#4ec9b0">✅ Branch restored! 2 hafte ka kaam wapas!</span><br><br>
+<strong>Reflog Git ka black box hai — flight recorder ki tarah.</strong> Sab kuch note hota hai.<br>
+Default 90 days tak accessible rehte hain deleted commits.<br><br>
+<em style="color:#dcdcaa">"Git mein data delete karna actually bahut mushkil hai — agar reflog jaante ho."</em> 🧙`
+        },
+        {
+          type: 'task',
+          text: '👇 Run <code>git reflog</code> to see all your HEAD movements!'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 21: git bisect
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-bisect',
+    title: 'git bisect',
+    icon: '🕵️',
+    filename: 'git-bisect.md',
+    group: 'Debug',
+    xp: 180,
+    emoji: '🕵️',
+    completionMsg: 'Bug detective! Binary search se koi bhi bug commit dhundh sakta hai ab tu 🕵️',
+    requiredCmds: ['git bisect start', 'git bisect bad', 'git bisect good a1b2c3d'],
+    content: () => renderLesson({
+      badge: 'MISSION 22 · DEBUG',
+      title: 'git bisect — Bug Ka Murderer Dhundho',
+      xp: 180,
+      objective: 'Start bisect session: <code>git bisect start</code>, then <code>git bisect bad</code>, then <code>git bisect good a1b2c3d</code>',
+      sections: [
+        { type: 'comment', text: '// git bisect — Binary search to find the commit that introduced a bug' },
+        { type: 'blank' },
+        {
+          type: 'explanation',
+          lines: [
+            { t: 'heading', text: 'How bisect works:' },
+            { t: 'blank' },
+            { t: 'text', text: '  Git does binary search between good and bad commits.' },
+            { t: 'text', text: '  1000 commits? Only 10 checks needed. O(log n)!' },
+            { t: 'text', text: '  You test each checkout → tell git: good or bad?' },
+          ]
+        },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git bisect start</span>               <span class="c-comment"># start session</span>',
+            '<span class="c-cmd">git bisect bad</span>                 <span class="c-comment"># current commit is broken</span>',
+            '<span class="c-cmd">git bisect good</span> <span class="c-hash">a1b2c3d</span>       <span class="c-comment"># this commit was working</span>',
+            '<span class="c-comment"># Git checks out midpoint. Test it!</span>',
+            '<span class="c-cmd">git bisect good</span>               <span class="c-comment"># if still working</span>',
+            '<span class="c-cmd">git bisect bad</span>                <span class="c-comment"># if broken</span>',
+            '<span class="c-comment"># Repeat until Git finds the exact commit</span>',
+            '<span class="c-cmd">git bisect reset</span>              <span class="c-comment"># end session</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '🕵️ Detective Story',
+          text: 'App kal kaam kar rahi thi. Aaj nahi. 200 commits hain beech mein. Kaun todha?<br><br><code>git bisect start</code><br><code>git bisect bad</code> (current = broken)<br><code>git bisect good v2.0</code> (v2.0 = working)<br><br>Git dekhega: 100 commits test karo → "good/bad" bolo → 50 → 25 → 12 → <strong>found!</strong> 🎯<br>10 checks mein 200 commits search!'
+        },
+        {
+          type: 'task',
+          text: '👇 Start bisect: <code>git bisect start</code>, then <code>git bisect bad</code>, then <code>git bisect good a1b2c3d</code>'
+        }
+      ]
+    })
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 22: git blame + show
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: 'git-blame-show',
+    title: 'git blame & git show',
+    icon: '👁️',
+    filename: 'git-blame.md',
+    group: 'Debug',
+    xp: 120,
+    emoji: '👁️',
+    completionMsg: 'Inspector! Har line ka author dhundh sakta hai ab tu 🔎',
+    requiredCmds: ['git blame index.js', 'git show a1b2c3d'],
+    content: () => renderLesson({
+      badge: 'MISSION 23 · DEBUG',
+      title: 'git blame & git show — Kaun Todha?',
+      xp: 120,
+      objective: 'Blame a file: <code>git blame index.js</code>, inspect commit: <code>git show a1b2c3d</code>',
+      sections: [
+        { type: 'comment', text: '// git blame — Show who changed each line of a file' },
+        { type: 'blank' },
+        {
+          type: 'code', lang: 'bash',
+          lines: [
+            '<span class="c-cmd">git blame</span> <span class="c-path">file.js</span>          <span class="c-comment"># who wrote each line</span>',
+            '<span class="c-cmd">git blame</span> <span class="c-flag">-L 10,20</span> <span class="c-path">file.js</span> <span class="c-comment"># only lines 10-20</span>',
+            '<span class="c-cmd">git blame</span> <span class="c-flag">-e</span> <span class="c-path">file.js</span>     <span class="c-comment"># show email instead</span>',
+            '',
+            '<span class="c-cmd">git show</span> <span class="c-hash">a1b2c3d</span>          <span class="c-comment"># show commit details + diff</span>',
+            '<span class="c-cmd">git show</span> <span class="c-hash">HEAD</span>             <span class="c-comment"># show latest commit</span>',
+            '<span class="c-cmd">git show</span> <span class="c-hash">HEAD</span><span class="c-flag">:</span><span class="c-path">file.txt</span>  <span class="c-comment"># show file at that commit</span>',
+          ]
+        },
+        {
+          type: 'callout', kind: 'desi',
+          title: '😈 git blame — The Real Use',
+          text: 'Bug mila code mein. <code>git blame app.js</code> → har line ke saamne naam aata hai.<br><br>Output: <code>a1b2c3d (Sparsh 2024-01-15) const x = undefined;</code><br><br>Sparsh ne ek line likhte waqt <code>undefined</code> return kiya. Case closed! 🔍<br><br>P.S. "blame" ka matlab actual blame nahi — bas history dekho 😅'
+        },
+        {
+          type: 'callout', kind: 'horror',
+          title: '💀 HORROR STORY #9 — git blame ne Nikali Asli Kahani',
+          text: `Production down tha. CEO ka call aa raha tha. Team panic mein. Senior developer ne terminal khola:<br><br>
+<span style="color:#858585">$ git blame payment_service.py | grep "process_refund"</span><br>
+<span style="color:#f44747">f3a91c2 (Rahul  2024-02-14 02:47 AM +0530 89) if amount > 0: process_refund(amount)</span><br><br>
+<strong>Raat 2:47 AM ka commit.</strong> Valentine's Day. Aur woh method directly database pe write karta tha bina validation ke.<br><br>
+Rahul se poochha gaya. Rahul: <em>"Yaar deadline tha, raat ko fix kiya tha quickly..."</em><br><br>
+Bug: refund amount validate nahi ho raha tha. Negative amounts bhi process ho rahe the → users ko double refund mil rahi thi.<br>
+<strong style="color:#ffd700">Company ko 2.3 lakh rupee ka loss hua overnight.</strong><br><br>
+Blame se lesson nahi — <strong>process se lesson:</strong><br>
+✅ Raat 2 AM pe hotfix = code review mandatory<br>
+✅ Financial logic mein unit tests = zero exceptions<br>
+✅ git blame = debugging tool, not firing tool 🙏<br><br>
+<em style="color:#858585">"The goal is to find the commit, not to punish the committer." — Every good tech lead</em>`
+        },
+        {
+          type: 'task',
+          text: '👇 Try: <code>git blame index.js</code> then <code>git show a1b2c3d</code>'
+        }
+      ]
+    })
+  },
+];
+
+// ── RENDER ENGINE ──────────────────────────────────────
+
+function renderLesson(data) {
+  let html = '';
+  let lineCount = 0;
+
+  data.sections.forEach(sec => {
+    if (sec.type === 'comment') {
+      html += `<div class="c-comment">${sec.text}</div>\n`;
+      lineCount++;
+    } else if (sec.type === 'blank') {
+      html += `<div style="height:8px"></div>\n`;
+      lineCount++;
+    } else if (sec.type === 'explanation') {
+      sec.lines.forEach(l => {
+        if (l.t === 'heading') {
+          html += `<div class="c-heading" style="margin:12px 0 4px">${l.text}</div>`;
+        } else if (l.t === 'blank') {
+          html += `<div style="height:6px"></div>`;
+        } else {
+          html += `<div style="line-height:1.8;margin:2px 0">${l.text}</div>`;
+        }
+        lineCount++;
+      });
+    } else if (sec.type === 'code') {
+      html += `<div class="code-block">
+        <div class="cb-header"><span>${sec.lang}</span><span>📋</span></div>
+        <div class="cb-body">`;
+      sec.lines.forEach(l => {
+        html += `<span class="ln-code">${l || '&nbsp;'}</span>`;
+        lineCount++;
+      });
+      html += `</div></div>`;
+    } else if (sec.type === 'callout') {
+      html += `<div class="callout ${sec.kind}">
+        <div class="callout-title">${sec.title}</div>
+        <div>${sec.text}</div>
+      </div>`;
+      lineCount += 3;    } else if (sec.type === 'diff-example') {
+      html += `<div class="diff-block code-block">
+        <div class="cb-header"><span>diff</span><span>example</span></div>
+        <div class="cb-body" style="padding:8px 0">
+          <span class="diff-ctx">@@ -1,4 +1,4 @@</span>
+          <span class="diff-ctx"> function greet(name) {</span>
+          <span class="diff-rem">-  return "Hello " + name;</span>
+          <span class="diff-add">+  return \`Hello, \${name}! 🎉\`;</span>
+          <span class="diff-ctx"> }</span>
+        </div>
+      </div>`;
+      lineCount += 6;
+    } else if (sec.type === 'task') {
+      html += `<div class="callout success" style="margin-top:16px">
+        <div class="callout-title">✅ YOUR TASK</div>
+        <div>${sec.text}</div>
+      </div>`;
+      lineCount += 2;
+    }
+  });
+
+  // Generate line numbers
+  let lns = '';
+  for (let i = 1; i <= Math.max(lineCount + 5, 30); i++) {
+    lns += `<span class="ln">${i}</span>`;
+  }
+
+  return { html, lns, title: data.title, badge: data.badge, xp: data.xp };
+}
+
+// ── TERMINAL SIMULATOR ─────────────────────────────────
+
+const REPO = G.repoState;
+
+// All commands engine
+function execCommand(raw) {
+  const input = raw.trim();
+  if (!input) return;
+
+  const parts = input.split(/\s+/);
+  const cmd = parts.slice(0, 2).join(' ');
+  const fullCmd = input;
+
+  printPrompt(input);
+
+  // Check mission progress
+  checkMissionProgress(input);
+
+  // Route command
+  if (input === 'git init') return gitInit();
+  if (input === 'git status' || input === 'git status -s' || input === 'git status --short') return gitStatus(input.includes('-s') || input.includes('--short'));
+  if (input.startsWith('git add ')) return gitAdd(parts.slice(2).join(' '));
+  if (input.startsWith('git commit')) return gitCommit(input);
+  if (input === 'git log') return gitLog(false);
+  if (input.startsWith('git log')) return gitLog(input);
+  if (input.startsWith('git diff')) return gitDiff(input);
+  if (input.startsWith('git restore --staged')) return gitRestoreStaged(parts[3]);
+  if (input.startsWith('git restore')) return gitRestore(parts[2]);
+  if (input.startsWith('git rm')) return gitRm(input);
+  if (input.startsWith('git mv')) return gitMv(parts[2], parts[3]);
+  if (input === 'git branch') return gitBranch();
+  if (input === 'git branch -a') return gitBranchAll();
+  if (input.startsWith('git branch -d ') || input.startsWith('git branch -D ')) return gitBranchDelete(parts[3], input.includes('-D'));
+  if (input.startsWith('git branch -m ')) return gitBranchRename(parts[3], parts[4]);
+  if (input.startsWith('git branch ')) return gitBranchCreate(parts[2]);
+  if (input.startsWith('git checkout -b ')) return gitCheckoutB(parts[3]);
+  if (input.startsWith('git checkout ')) return gitCheckout(parts[2]);
+  if (input.startsWith('git switch -c ')) return gitSwitchC(parts[3]);
+  if (input.startsWith('git switch ')) return gitSwitch(parts[2]);
+  if (input.startsWith('git merge')) return gitMerge(parts[2], input);
+  if (input === 'git remote' || input === 'git remote -v') return gitRemote();
+  if (input.startsWith('git remote add ')) return gitRemoteAdd(parts[3], parts[4]);
+  if (input.startsWith('git push')) return gitPush(input);
+  if (input.startsWith('git pull')) return gitPull(input);
+  if (input.startsWith('git fetch')) return gitFetch();
+  if (input.startsWith('git clone ')) return gitClone(parts[2]);
+  if (input.startsWith('git reset --soft')) return gitReset('soft', input);
+  if (input.startsWith('git reset --hard')) return gitReset('hard', input);
+  if (input.startsWith('git reset --mixed') || input === 'git reset HEAD~1') return gitReset('mixed', input);
+  if (input.startsWith('git reset')) return gitReset('mixed', input);
+  if (input.startsWith('git revert')) return gitRevert(parts[2]);
+  if (input.startsWith('git commit --amend')) return gitAmend(input);
+  if (input === 'git stash') return gitStash();
+  if (input === 'git stash list') return gitStashList();
+  if (input === 'git stash pop') return gitStashPop();
+  if (input.startsWith('git stash apply')) return gitStashApply(parts[3]);
+  if (input === 'git stash drop') return gitStashDrop();
+  if (input === 'git stash clear') return gitStashClear();
+  if (input.startsWith('git stash save')) return gitStashSave(parts.slice(3).join(' ').replace(/['"]/g,''));
+  if (input.startsWith('git cherry-pick')) return gitCherryPick(parts[2]);
+  if (input.startsWith('git rebase -i')) return gitRebaseI(parts[3]);
+  if (input.startsWith('git rebase --abort')) return printLines([{t:'ok', s:'Rebase aborted. You are back on original branch.'}]);
+  if (input.startsWith('git rebase --continue')) return printLines([{t:'ok', s:'Rebase continued. All done!'}]);
+  if (input.startsWith('git rebase')) return gitRebase(parts[2]);
+  if (input === 'git tag') return gitTagList();
+  if (input.startsWith('git tag -a')) return gitTagAnnotated(parts[3], parts.slice(5).join(' ').replace(/['"]/g,''));
+  if (input.startsWith('git tag -d')) return gitTagDelete(parts[3]);
+  if (input.startsWith('git tag ')) return gitTagCreate(parts[2]);
+  if (input === 'git reflog' || input.startsWith('git reflog ')) return gitReflog();
+  if (input === 'git bisect start') return gitBisectStart();
+  if (input === 'git bisect bad') return gitBisectBad();
+  if (input.startsWith('git bisect good')) return gitBisectGood(parts[3]);
+  if (input === 'git bisect good') return gitBisectGoodOnly();
+  if (input === 'git bisect reset') return printLines([{t:'ok', s:'We are back to the HEAD of the branch.'}]);
+  if (input.startsWith('git blame')) return gitBlame(parts[2]);
+  if (input.startsWith('git show')) return gitShow(parts[2]);
+  if (input === 'clear' || input === 'reset') return clearTerminal();
+  if (input === 'help' || input === 'git help') return showHelp();
+  if (input === 'ls') return printLines([{t:'out', s:'README.md  index.js  package.json  .gitignore'}]);
+  if (input === 'ls -la' || input === 'ls -a') return printLines([{t:'out', s:'drwxr-xr-x  .  ..\n-rw-r--r--  README.md\n-rw-r--r--  index.js\n-rw-r--r--  package.json\n-rw-r--r--  .gitignore\ndrwxr-xr-x  .git/'}]);
+  if (input === 'pwd') return printLines([{t:'out', s:'/home/user/myproject'}]);
+  if (input === 'whoami') return printLines([{t:'out', s:'gitlearner@gitquest'}]);
+  if (input.startsWith('cd ') || input === 'cd') return printLines([{t:'ok', s:'Changed directory.'}]);
+  if (input.startsWith('mkdir ') || input.startsWith('touch ') || input.startsWith('echo ')) return printLines([{t:'ok', s:'Done.'}]);
+  if (input === 'cat .gitignore') return printLines([{t:'out', s:'node_modules/\nvenv/\n*.pyc\n__pycache__/\n.env\n*.log\ndist/\nbuild/\ndataset/'}]);
+  if (input.startsWith('cat ')) return printLines([{t:'out', s:'# ' + (parts[1] || 'file') + '\nThis is a simulated file content.'}]);
+
+  // Unknown git command
+  if (input.startsWith('git ')) {
+    printLines([
+      {t:'err', s:`git: '${parts[1]}' is not a git command. See 'git help'.`},
+      {t:'muted', s:`Did you mean: ${suggestCommand(parts[1])}`}
+    ]);
+    return;
+  }
+
+  // Unknown command
+  printLines([{t:'err', s:`command not found: ${parts[0]}. Try 'help' or a git command.`}]);
+}
+
+function suggestCommand(subcmd) {
+  const cmds = ['init','status','add','commit','log','diff','restore','branch','checkout','switch','merge','remote','push','pull','fetch','clone','reset','revert','stash','cherry-pick','rebase','tag','reflog','bisect','blame','show','rm','mv'];
+  let best = cmds[0], bestScore = 99;
+  cmds.forEach(c => {
+    const d = editDistance(subcmd||'', c);
+    if (d < bestScore) { bestScore = d; best = c; }
+  });
+  return `git ${best}`;
+}
+function editDistance(a,b){
+  const m=a.length,n=b.length;
+  const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);
+  return d[m][n];
+}
+
+// ── GIT COMMAND IMPLEMENTATIONS ────────────────────────
+
+function gitInit() {
+  printLines([
+    {t:'out', s:'Initialized empty Git repository in /home/user/myproject/.git/'},
+    {t:'ok', s:'✓ .git/ folder created — version control is active!'},
+    {t:'muted', s:'Tip: Set your identity: git config --global user.name "YourName"'},
+  ]);
+  addXPToast(10, 'Command run!', '');
+}
+
+function gitStatus(short = false) {
+  if (short) {
+    const lines = [];
+    REPO.staged.forEach(f => lines.push({t:'ok', s:`A  ${f}`}));
+    REPO.modified.forEach(f => lines.push({t:'warn', s:` M ${f}`}));
+    REPO.untracked.forEach(f => lines.push({t:'muted', s:`?? ${f}`}));
+    if (lines.length === 0) lines.push({t:'ok', s:'nothing to commit, working tree clean'});
+    printLines(lines);
+    return;
+  }
+  const lines = [
+    {t:'out', s:`On branch ${REPO.branch}`},
+    {t:'blank'},
+  ];
+  if (REPO.staged.length > 0) {
+    lines.push({t:'ok', s:'Changes to be committed:'});
+    lines.push({t:'muted', s:'  (use "git restore --staged <file>..." to unstage)'});
+    REPO.staged.forEach(f => lines.push({t:'ok', s:`\tnew file:   ${f}`}));
+    lines.push({t:'blank'});
+  }
+  if (REPO.modified.length > 0) {
+    lines.push({t:'warn', s:'Changes not staged for commit:'});
+    REPO.modified.forEach(f => lines.push({t:'warn', s:`\tmodified:   ${f}`}));
+    lines.push({t:'blank'});
+  }
+  if (REPO.untracked.length > 0) {
+    lines.push({t:'out', s:'Untracked files:'});
+    lines.push({t:'muted', s:'  (use "git add <file>..." to include in what will be committed)'});
+    REPO.untracked.forEach(f => lines.push({t:'muted', s:`\t${f}`}));
+    lines.push({t:'blank'});
+  }
+  if (REPO.staged.length === 0 && REPO.modified.length === 0 && REPO.untracked.length === 0) {
+    lines.push({t:'ok', s:'nothing to commit, working tree clean'});
+  }
+  printLines(lines);
+}
+
+function gitAdd(target) {
+  if (!target) { printLines([{t:'err', s:'Nothing specified. Did you mean: git add . ?'}]); return; }
+  if (target === '.') {
+    const added = [...REPO.untracked, ...REPO.modified];
+    REPO.staged = [...new Set([...REPO.staged, ...added])];
+    REPO.untracked = [];
+    REPO.modified = [];
+    printLines([
+      {t:'ok', s:`✓ Staged ${added.length} file(s): ${added.join(', ')}`},
+      {t:'warn', s:'⚠  Make sure .gitignore is set up before using git add .'},
+    ]);
+  } else if (REPO.untracked.includes(target) || REPO.modified.includes(target)) {
+    REPO.staged = [...new Set([...REPO.staged, target])];
+    REPO.untracked = REPO.untracked.filter(f => f !== target);
+    REPO.modified = REPO.modified.filter(f => f !== target);
+    printLines([{t:'ok', s:`✓ Staged: ${target}`}]);
+  } else if (REPO.staged.includes(target)) {
+    printLines([{t:'muted', s:`Already staged: ${target}`}]);
+  } else {
+    printLines([
+      {t:'err', s:`pathspec '${target}' did not match any files`},
+      {t:'muted', s:`Available: ${[...REPO.untracked, ...REPO.modified].join(', ') || '(none)'}`}
+    ]);
+  }
+  addXPToast(5, '+5 XP', 'File staged!');
+}
+
+function gitCommit(input) {
+  if (REPO.staged.length === 0) {
+    printLines([
+      {t:'warn', s:'On branch ' + REPO.branch},
+      {t:'warn', s:'nothing to commit, working tree clean'},
+      {t:'muted', s:'Tip: git add <file> first, then commit.'},
+    ]); return;
+  }
+  const msgMatch = input.match(/-m\s+["'](.+?)["']/);
+  const msg = msgMatch ? msgMatch[1] : 'WIP commit';
+  const hash = Math.random().toString(36).substr(2,7);
+  const newCommit = { hash, msg, author: 'You', date: 'just now', branch: REPO.branch };
+  REPO.log.unshift(newCommit);
+  REPO.committed = [...REPO.committed, ...REPO.staged];
+  REPO.staged = [];
+  printLines([
+    {t:'ok', s:`[${REPO.branch} ${hash}] ${msg}`},
+    {t:'out', s:` ${REPO.committed.length} file(s) changed, ${Math.floor(Math.random()*20)+1} insertions(+)`},
+    {t:'muted', s:'Author: You <you@gitquest.dev>'},
+  ]);
+  addXPToast(15, '+15 XP', 'Commit created!');
+}
+
+function gitLog(input) {
+  if (REPO.log.length === 0) {
+    printLines([{t:'warn', s:'fatal: your current branch has no commits yet'}]); return;
+  }
+  const oneline = input && (input.includes('--oneline') || input.includes('-1') || input.includes('-5'));
+  const graph = input && input.includes('--graph');
+
+  if (oneline) {
+    const limit = input.includes('-1') ? 1 : input.includes('-5') ? 5 : REPO.log.length;
+    const lines = REPO.log.slice(0, limit).map((c, i) => {
+      const prefix = graph ? (i === 0 ? '* ' : '| ') : '';
+      const tag = i === 0 ? ` (HEAD -> ${REPO.branch})` : '';
+      return {t:'out', s:`${prefix}\x1b[33m${c.hash}\x1b[0m${tag} ${c.msg}`};
+    });
+    lines.forEach(l => l.s = l.s.replace(/\x1b\[\d+m/g, ''));
+    const colored = REPO.log.slice(0, limit).map((c, i) => {
+      const prefix = graph ? (i === 0 ? '* ' : '| ') : '';
+      const tag = i === 0 ? `<span class="c-pink"> (HEAD → ${REPO.branch})</span>` : '';
+      return `${prefix}<span class="c-hash">${c.hash}</span>${tag} ${c.msg}`;
+    });
+    printHTML(colored.map(h => `<div>${h}</div>`).join(''));
+    return;
+  }
+
+  const lines = [];
+  REPO.log.slice(0, 5).forEach((c, i) => {
+    lines.push({t:'hash', s:`commit ${c.hash}${'a'.repeat(33)} ${i === 0 ? `(HEAD -> ${REPO.branch})` : ''}`});
+    lines.push({t:'out', s:`Author: ${c.author} <you@gitquest.dev>`});
+    lines.push({t:'out', s:`Date:   ${c.date}`});
+    lines.push({t:'blank'});
+    lines.push({t:'out', s:`    ${c.msg}`});
+    lines.push({t:'blank'});
+  });
+  printLines(lines);
+}
+
+function gitDiff(input) {
+  const staged = input.includes('--staged') || input.includes('--cached');
+  const lines = staged ? REPO.staged : REPO.modified;
+  if (lines.length === 0) {
+    printLines([{t:'muted', s:staged ? '(no staged changes)' : '(no unstaged changes)'}]); return;
+  }
+  printHTML(`
+    <div class="c-muted">diff --git a/index.js b/index.js</div>
+    <div class="c-muted">--- a/index.js</div>
+    <div class="c-muted">+++ b/index.js</div>
+    <div class="c-muted">@@ -1,5 +1,6 @@</div>
+    <div class="diff-ctx"> function main() {</div>
+    <div class="diff-rem">-  console.log("hello");</div>
+    <div class="diff-add">+  console.log("hello, world! 🎉");</div>
+    <div class="diff-add">+  return true;</div>
+    <div class="diff-ctx"> }</div>
+  `);
+}
+
+function gitRestore(file) {
+  if (!file) { printLines([{t:'err', s:'error: no pathspec specified'}]); return; }
+  REPO.modified = REPO.modified.filter(f => f !== file);
+  printLines([
+    {t:'ok', s:`✓ Restored: ${file} (changes discarded from working directory)`},
+    {t:'muted', s:'These local changes are permanently gone.'},
+  ]);
+}
+
+function gitRestoreStaged(file) {
+  if (!file) { file = REPO.staged[REPO.staged.length - 1] || 'file.txt'; }
+  if (REPO.staged.includes(file)) {
+    REPO.staged = REPO.staged.filter(f => f !== file);
+    REPO.modified.push(file);
+    printLines([{t:'ok', s:`✓ Unstaged: ${file} (moved back to working directory)`}]);
+  } else {
+    printLines([{t:'muted', s:`${file} is not in the staging area`}]);
+  }
+}
+
+function gitRm(input) {
+  const cached = input.includes('--cached');
+  const file = input.split(' ').pop();
+  if (cached) {
+    printLines([
+      {t:'ok', s:`rm '${file}'`},
+      {t:'ok', s:`✓ ${file} untracked (but kept on disk). Add to .gitignore!`}
+    ]);
+  } else {
+    printLines([{t:'ok', s:`rm '${file}'\n✓ ${file} removed from repo and disk.`}]);
+  }
+}
+
+function gitMv(from, to) {
+  if (!from || !to) { printLines([{t:'err', s:'Usage: git mv <source> <dest>'}]); return; }
+  printLines([{t:'ok', s:`✓ Renamed: ${from} → ${to} (staged automatically)`}]);
+}
+
+function gitBranch() {
+  const lines = REPO.branches.map(b => ({
+    t:'out',
+    s: b === REPO.branch ? `* ${b}` : `  ${b}`
+  }));
+  printLines(lines);
+}
+function gitBranchAll() {
+  const lines = REPO.branches.map(b => ({t:'out', s: b === REPO.branch ? `* ${b}` : `  ${b}`}));
+  lines.push({t:'muted', s:'  remotes/origin/main'});
+  printLines(lines);
+}
+function gitBranchCreate(name) {
+  if (!name) { printLines([{t:'err', s:'Branch name required'}]); return; }
+  if (REPO.branches.includes(name)) { printLines([{t:'err', s:`fatal: A branch named '${name}' already exists`}]); return; }
+  REPO.branches.push(name);
+  printLines([{t:'ok', s:`✓ Branch '${name}' created (still on '${REPO.branch}')`}]);
+  updatePS1();
+}
+function gitBranchDelete(name, force) {
+  if (!REPO.branches.includes(name)) { printLines([{t:'err', s:`error: branch '${name}' not found`}]); return; }
+  if (name === REPO.branch) { printLines([{t:'err', s:`error: Cannot delete the currently active branch`}]); return; }
+  REPO.branches = REPO.branches.filter(b => b !== name);
+  printLines([{t:'ok', s:`Deleted branch ${name}.`}]);
+}
+function gitBranchRename(from, to) {
+  if (!to) { REPO.branches = REPO.branches.map(b => b === REPO.branch ? from : b); if (REPO.branch) REPO.branch = from; updatePS1(); printLines([{t:'ok', s:`Branch renamed to '${from}'`}]); return; }
+  REPO.branches = REPO.branches.map(b => b === from ? to : b);
+  if (REPO.branch === from) { REPO.branch = to; updatePS1(); }
+  printLines([{t:'ok', s:`Branch '${from}' renamed to '${to}'`}]);
+}
+
+function gitCheckout(ref) {
+  if (!ref) { printLines([{t:'err', s:'error: No branch specified'}]); return; }
+  if (REPO.branches.includes(ref)) {
+    REPO.branch = ref; updatePS1();
+    printLines([{t:'ok', s:`Switched to branch '${ref}'`}]);
+  } else if (ref.length === 7) {
+    printLines([{t:'warn', s:`HEAD is now at ${ref} — You are in 'detached HEAD' state.`},{t:'muted', s:"Use 'git switch main' to return."}]);
+  } else {
+    printLines([{t:'err', s:`error: pathspec '${ref}' did not match any branch`}]);
+  }
+}
+function gitCheckoutB(name) {
+  if (!name) { printLines([{t:'err', s:'Branch name required'}]); return; }
+  if (!REPO.branches.includes(name)) REPO.branches.push(name);
+  REPO.branch = name; updatePS1();
+  printLines([{t:'ok', s:`Switched to a new branch '${name}'`}]);
+}
+function gitSwitch(name) {
+  if (REPO.branches.includes(name)) {
+    REPO.branch = name; updatePS1();
+    printLines([{t:'ok', s:`Switched to branch '${name}'`}]);
+  } else {
+    printLines([{t:'err', s:`fatal: invalid reference: ${name}`},{t:'muted', s:`Available: ${REPO.branches.join(', ')}`}]);
+  }
+}
+function gitSwitchC(name) {
+  if (!REPO.branches.includes(name)) REPO.branches.push(name);
+  REPO.branch = name; updatePS1();
+  printLines([{t:'ok', s:`Switched to a new branch '${name}'`}]);
+}
+
+function gitMerge(branch, input) {
+  if (!branch) { printLines([{t:'err', s:'error: No branch specified to merge'}]); return; }
+  if (input && input.includes('--abort')) { printLines([{t:'ok', s:'Merge aborted. Back to pre-merge state.'}]); return; }
+  if (!REPO.branches.includes(branch)) { printLines([{t:'err', s:`merge: ${branch} - not something we can merge`}]); return; }
+
+  const hash = Math.random().toString(36).substr(2,7);
+  const msg = `Merge branch '${branch}' into ${REPO.branch}`;
+  REPO.log.unshift({ hash, msg, author: 'You', date: 'just now', branch: REPO.branch });
+
+  printLines([
+    {t:'ok', s:`Merge made by the 'ort' strategy.`},
+    {t:'out', s:` 2 files changed, 14 insertions(+), 1 deletion(-)`},
+    {t:'out', s:` create mode 100644 feature.js`},
+    {t:'muted', s:`Fast-forward or 3-way merge — branch '${branch}' merged ✓`},
+  ]);
+  addXPToast(20, '+20 XP', 'Merge complete!');
+}
+
+function gitRemote() {
+  if (Object.keys(REPO.remotes).length === 0) {
+    printLines([{t:'muted', s:'(no remotes configured)\nTip: git remote add origin <url>'}]); return;
+  }
+  const lines = Object.entries(REPO.remotes).flatMap(([name, url]) => [
+    {t:'out', s:`${name}\t${url} (fetch)`},
+    {t:'out', s:`${name}\t${url} (push)`}
+  ]);
+  printLines(lines);
+}
+function gitRemoteAdd(name, url) {
+  if (!name || !url) { printLines([{t:'err', s:'Usage: git remote add <name> <url>'}]); return; }
+  REPO.remotes[name] = url;
+  printLines([{t:'ok', s:`✓ Remote '${name}' added: ${url}`}]);
+  addXPToast(10, '+10 XP', 'Remote added!');
+}
+
+function gitPush(input) {
+  if (Object.keys(REPO.remotes).length === 0) {
+    printLines([{t:'err', s:`fatal: 'origin' does not appear to be a git repository`},{t:'muted', s:'Tip: git remote add origin <url>'}]); return;
+  }
+  if (input.includes('--force-with-lease')) {
+    printLines([{t:'ok', s:`✓ Force-with-lease push: refs/heads/${REPO.branch} → origin/${REPO.branch}`}]); return;
+  }
+  printLines([
+    {t:'muted', s:'Enumerating objects: 5, done.'},
+    {t:'muted', s:'Counting objects: 100% (5/5), done.'},
+    {t:'muted', s:'Writing objects: 100% (3/3), 1.24 KiB | 1.24 MiB/s, done.'},
+    {t:'ok', s:`✓ ${REPO.branch} → origin/${REPO.branch}`},
+    {t:'ok', s:`Branch '${REPO.branch}' set up to track remote branch 'origin/${REPO.branch}'.`},
+  ]);
+  addXPToast(15, '+15 XP', 'Pushed to remote!');
+}
+function gitPull(input) {
+  printLines([
+    {t:'muted', s:`remote: Enumerating objects: 3, done.`},
+    {t:'muted', s:`From ${Object.values(REPO.remotes)[0] || 'origin'}`},
+    {t:'muted', s:`   a1b2c3d..d4e5f6g  main → origin/main`},
+    {t:'ok', s:'✓ Updating a1b2c3d..d4e5f6g'},
+    {t:'out', s:' Fast-forward\n  README.md | 5 +++++\n  1 file changed, 5 insertions(+)'},
+  ]);
+}
+function gitFetch() {
+  printLines([
+    {t:'muted', s:'remote: Counting objects: 3, done.'},
+    {t:'muted', s:`From origin`},
+    {t:'out', s:`   a1b2c3d..d4e5f6g  main → origin/main`},
+    {t:'muted', s:'(Changes downloaded but NOT merged. Run git merge to apply.)'},
+  ]);
+}
+function gitClone(url) {
+  if (!url) { printLines([{t:'err', s:'Usage: git clone <url>'}]); return; }
+  const name = url.split('/').pop().replace('.git','');
+  printLines([
+    {t:'out', s:`Cloning into '${name}'...`},
+    {t:'muted', s:'remote: Enumerating objects: 1423, done.'},
+    {t:'muted', s:'remote: Total 1423 (delta 0), reused 1423 (delta 0)'},
+    {t:'muted', s:'Receiving objects: 100% (1423/1423), 4.52 MiB | 2.1 MiB/s, done.'},
+    url.includes('linux') ? {t:'warn', s:'⚠  That\'s the Linux kernel (4GB+)! Use --depth=1 next time!'} : {t:'ok', s:`✓ Cloned: ${name}`},
+  ]);
+  addXPToast(20, '+20 XP', 'Repo cloned!');
+}
+
+function gitReset(mode, input) {
+  if (REPO.log.length === 0) { printLines([{t:'err', s:'fatal: ambiguous argument HEAD~1: unknown revision'}]); return; }
+  const removed = REPO.log.shift();
+  if (mode === 'soft') {
+    REPO.staged = [...REPO.staged, ...REPO.committed.slice(-2)];
+    printLines([{t:'ok', s:`✓ Soft reset: HEAD moved back. Changes preserved in STAGING.`},{t:'muted', s:`Uncommitted: ${removed.msg}`}]);
+  } else if (mode === 'hard') {
+    printLines([
+      {t:'warn', s:`HEAD is now at ${REPO.log[0]?.hash || 'initial'} ${REPO.log[0]?.msg || ''}`},
+      {t:'err', s:`⚠  Working directory changes DELETED permanently!`},
+      {t:'muted', s:'Use git reflog to recover if needed.'}
+    ]);
+    REPO.staged = []; REPO.modified = [];
+  } else {
+    printLines([{t:'ok', s:`✓ Mixed reset: HEAD moved back. Changes in working directory (unstaged).`}]);
+  }
+  addXPToast(10, 'Reset done', 'Be careful!');
+}
+
+function gitRevert(ref) {
+  if (!ref) ref = 'HEAD';
+  const hash = Math.random().toString(36).substr(2,7);
+  printLines([
+    {t:'ok', s:`[${REPO.branch} ${hash}] Revert "${REPO.log[0]?.msg || 'last commit'}"`},
+    {t:'out', s:' 1 file changed, 2 deletions(-)'},
+    {t:'muted', s:'A new commit was created that undoes the changes. History preserved! ✓'},
+  ]);
+  REPO.log.unshift({ hash, msg: `Revert "${REPO.log[0]?.msg}"`, author:'You', date:'just now', branch: REPO.branch });
+}
+
+function gitAmend(input) {
+  if (REPO.log.length === 0) { printLines([{t:'err', s:'Nothing to amend'}]); return; }
+  const msgMatch = input.match(/-m\s+["'](.+?)["']/);
+  const newHash = Math.random().toString(36).substr(2,7);
+  if (msgMatch) { REPO.log[0].msg = msgMatch[1]; }
+  REPO.log[0].hash = newHash;
+  printLines([{t:'ok', s:`[${REPO.branch} ${newHash}] ${REPO.log[0].msg}`},{t:'muted', s:'Last commit amended. ⚠  Only amend before pushing!'}]);
+}
+
+function gitStash() {
+  const changes = [...REPO.staged, ...REPO.modified];
+  if (changes.length === 0) { printLines([{t:'warn', s:'No local changes to save'}]); return; }
+  const msg = `WIP on ${REPO.branch}: ${REPO.log[0]?.hash || 'init'} ${REPO.log[0]?.msg || 'initial'}`;
+  REPO.stash.push({ msg, files: changes });
+  REPO.staged = []; REPO.modified = [];
+  printLines([{t:'ok', s:`Saved working directory and index state`},{t:'muted', s:msg}]);
+  addXPToast(10, 'Stashed!', 'Changes safely saved');
+}
+function gitStashSave(msg) {
+  const changes = [...REPO.staged, ...REPO.modified];
+  if (changes.length === 0) { printLines([{t:'warn', s:'No local changes to save'}]); return; }
+  REPO.stash.push({ msg: msg || 'WIP', files: changes });
+  REPO.staged = []; REPO.modified = [];
+  printLines([{t:'ok', s:`Saved working directory: "${msg || 'WIP'}"`}]);
+}
+function gitStashList() {
+  if (REPO.stash.length === 0) { printLines([{t:'muted', s:'(no stashes)'}]); return; }
+  printLines(REPO.stash.map((s, i) => ({t:'out', s:`stash@{${i}}: On ${REPO.branch}: ${s.msg}`})));
+}
+function gitStashPop() {
+  if (REPO.stash.length === 0) { printLines([{t:'err', s:'error: No stash entries found.'}]); return; }
+  const s = REPO.stash.pop();
+  REPO.modified = [...REPO.modified, ...s.files];
+  printLines([{t:'ok', s:`On branch ${REPO.branch}`},{t:'out', s:`Changes not staged for commit:\n\tmodified:   ${s.files.join(', ')}`},{t:'ok', s:'Dropped stash@{0}'}]);
+  addXPToast(10, 'Stash popped!', 'Changes restored');
+}
+function gitStashApply(ref) {
+  if (REPO.stash.length === 0) { printLines([{t:'err', s:'No stash entries.'}]); return; }
+  const idx = ref ? parseInt(ref.replace(/\D/g,'')) || 0 : 0;
+  const s = REPO.stash[Math.min(idx, REPO.stash.length-1)];
+  REPO.modified = [...REPO.modified, ...s.files];
+  printLines([{t:'ok', s:`Applied stash@{${idx}} (stash not removed — use git stash drop to remove)`}]);
+}
+function gitStashDrop() { if (REPO.stash.length===0){printLines([{t:'err',s:'No stash.'}]);return;} REPO.stash.pop(); printLines([{t:'ok',s:'Dropped stash@{0}'}]); }
+function gitStashClear() { REPO.stash=[]; printLines([{t:'warn',s:'All stashes cleared.'}]); }
+
+function gitCherryPick(hash) {
+  if (!hash) { printLines([{t:'err', s:'Usage: git cherry-pick <hash>'}]); return; }
+  const newHash = Math.random().toString(36).substr(2,7);
+  const found = REPO.log.find(c => c.hash === hash);
+  const msg = found ? found.msg : 'cherry-picked commit';
+  REPO.log.unshift({ hash: newHash, msg, author:'You', date:'just now', branch: REPO.branch });
+  printLines([
+    {t:'ok', s:`[${REPO.branch} ${newHash}] ${msg}`},
+    {t:'muted', s:`Cherry-picked from ${hash} — new hash assigned (it's a copy!)`},
+  ]);
+  addXPToast(20, '+20 XP', 'Cherry-picked!');
+}
+
+function gitRebase(onto) {
+  if (!onto) { printLines([{t:'err', s:'Usage: git rebase <branch>'}]); return; }
+  printLines([
+    {t:'ok', s:`Successfully rebased and updated refs/heads/${REPO.branch}.`},
+    {t:'muted', s:`Your commits are now on top of '${onto}'.`},
+    {t:'muted', s:'(Linear history, no merge commit ✓)'},
+  ]);
+  addXPToast(25, '+25 XP', 'Rebase done!');
+}
+function gitRebaseI(ref) {
+  if (!ref) ref = 'HEAD~3';
+  printLines([
+    {t:'out', s:'# Interactive rebase — last commits:'},
+    {t:'out', s:'pick a1b2c3d feat: add feature'},
+    {t:'out', s:'pick b2c3d4e fix: typo'},
+    {t:'out', s:'pick c3d4e5f docs: update readme'},
+    {t:'blank'},
+    {t:'muted', s:'# Commands: p=pick, r=reword, e=edit, s=squash, f=fixup, d=drop'},
+    {t:'muted', s:'# (In a real terminal, this opens your editor. Here it\'s simulated!)'},
+    {t:'ok', s:'✓ Rebase simulation complete. 3 commits rewritten.'},
+  ]);
+  addXPToast(30, '+30 XP', 'Interactive rebase!');
+}
+
+function gitTagList() { printLines(REPO.tags.length ? REPO.tags.map(t=>({t:'out',s:t})) : [{t:'muted',s:'(no tags yet)'}]); }
+function gitTagCreate(name) { if (!name){printLines([{t:'err',s:'Name required'}]);return;} REPO.tags.push(name); printLines([{t:'ok',s:`✓ Tag '${name}' created (lightweight)`}]); addXPToast(10,'+10 XP','Tag created!'); }
+function gitTagAnnotated(name, msg) { if (!name){printLines([{t:'err',s:'Name required'}]);return;} REPO.tags.push(name); printLines([{t:'ok',s:`✓ Annotated tag '${name}' created\n  Message: ${msg}`}]); addXPToast(15,'+15 XP','Annotated tag!'); }
+function gitTagDelete(name) { REPO.tags = REPO.tags.filter(t=>t!==name); printLines([{t:'ok',s:`Deleted tag '${name}'`}]); }
+
+function gitReflog() {
+  const entries = [
+    {hash:'d4e5f6g', action:`HEAD@{0}: commit: ${REPO.log[0]?.msg || 'latest commit'}`},
+    {hash:'c3d4e5f', action:'HEAD@{1}: checkout: moving from feature/login to main'},
+    {hash:'b2c3d4e', action:'HEAD@{2}: commit: feat: add login'},
+    {hash:'a1b2c3d', action:'HEAD@{3}: reset: moving to HEAD~1'},
+    {hash:'z9y8x7w', action:'HEAD@{4}: commit (initial): Initial commit'},
+  ];
+  printLines(entries.map(e => ({t:'out', s:`${e.hash} ${e.action}`})));
+  printLines([{t:'muted', s:'Tip: git checkout HEAD@{N} to go back to any state!'}]);
+}
+
+const bisectState = { started: false, bad: null, good: null, checks: 0 };
+function gitBisectStart() { bisectState.started=true; bisectState.checks=0; printLines([{t:'ok',s:'bisect started. Now mark current as bad and an old known-good commit.'}]); }
+function gitBisectBad() { if(!bisectState.started){printLines([{t:'err',s:'Not in bisect session. git bisect start first.'}]);return;} bisectState.bad=REPO.log[0]?.hash; printLines([{t:'ok',s:`Marked ${bisectState.bad} as bad.`}]); }
+function gitBisectGood(hash) { if(!hash){printLines([{t:'err',s:'Provide a known-good hash'}]);return;} bisectState.good=hash; bisectState.checks++; const mid=Math.random().toString(36).substr(2,7); printLines([{t:'out',s:`Bisecting: ~${8-bisectState.checks} revisions left`},{t:'out',s:`[${mid}] Checking out midpoint...`},{t:'muted',s:'Test this commit and run: git bisect good OR git bisect bad'}]); if(bisectState.checks>=3){printLines([{t:'ok',s:`\n${mid} is the first bad commit!\nadd login.js 2 days ago`},{t:'ok',s:'bisect: done! Run git bisect reset to clean up.'}]);} }
+function gitBisectGoodOnly() { bisectState.checks++; const mid=Math.random().toString(36).substr(2,7); printLines([{t:'out',s:`Bisecting: ~${5-bisectState.checks} revisions left`},{t:'out',s:`[${mid}] Next checkpoint...`}]); }
+
+function gitBlame(file) {
+  if (!file) { printLines([{t:'err', s:'Usage: git blame <file>'}]); return; }
+  const lines = [
+    {hash:'a1b2c3d', author:'You       ', date:'2024-01-10', line:' 1', code:'const express = require("express");'},
+    {hash:'b2c3d4e', author:'Alice     ', date:'2024-01-11', line:' 2', code:'const app = express();'},
+    {hash:'a1b2c3d', author:'You       ', date:'2024-01-10', line:' 3', code:''},
+    {hash:'c3d4e5f', author:'Bob       ', date:'2024-01-12', line:' 4', code:'app.get("/", (req, res) => {'},
+    {hash:'d4e5f6g', author:'You       ', date:'2024-01-15', line:' 5', code:'  res.send("Hello World!");'},
+    {hash:'c3d4e5f', author:'Bob       ', date:'2024-01-12', line:' 6', code:'});'},
+  ];
+  printHTML(lines.map(l =>
+    `<div><span class="c-hash">${l.hash}</span> <span class="c-muted">(${l.author} ${l.date} ${l.line})</span> ${escHtml(l.code)}</div>`
+  ).join(''));
+}
+
+function gitShow(ref) {
+  const c = ref && REPO.log.find(x => x.hash === ref) || REPO.log[0];
+  if (!c) { printLines([{t:'err',s:'bad revision'}]); return; }
+  printHTML(`
+    <div><span class="c-hash">commit ${c.hash}aaabbbbccc</span> <span class="c-pink">(HEAD → ${c.branch || REPO.branch})</span></div>
+    <div>Author: ${c.author} &lt;you@gitquest.dev&gt;</div>
+    <div>Date:   ${c.date}</div>
+    <div>&nbsp;</div>
+    <div>    ${c.msg}</div>
+    <div>&nbsp;</div>
+    <div class="c-muted">diff --git a/index.js b/index.js</div>
+    <div class="diff-add">+  console.log("Hello!");</div>
+  `);
+}
+
+function showHelp() {
+  printHTML(`
+    <div class="c-heading" style="margin-bottom:8px">GitQuest — Available Commands</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 24px;font-size:12px">
+      <div><span class="c-cmd">git init</span> <span class="c-muted">Initialize repo</span></div>
+      <div><span class="c-cmd">git status</span> <span class="c-muted">Check status</span></div>
+      <div><span class="c-cmd">git add .</span> <span class="c-muted">Stage all files</span></div>
+      <div><span class="c-cmd">git commit -m</span> <span class="c-muted">Create commit</span></div>
+      <div><span class="c-cmd">git log</span> <span class="c-muted">View history</span></div>
+      <div><span class="c-cmd">git diff</span> <span class="c-muted">View changes</span></div>
+      <div><span class="c-cmd">git branch</span> <span class="c-muted">List branches</span></div>
+      <div><span class="c-cmd">git checkout</span> <span class="c-muted">Switch branch</span></div>
+      <div><span class="c-cmd">git merge</span> <span class="c-muted">Merge branch</span></div>
+      <div><span class="c-cmd">git push/pull</span> <span class="c-muted">Sync remote</span></div>
+      <div><span class="c-cmd">git stash</span> <span class="c-muted">Save changes</span></div>
+      <div><span class="c-cmd">git rebase</span> <span class="c-muted">Rebase commits</span></div>
+      <div><span class="c-cmd">git reset</span> <span class="c-muted">Undo commits</span></div>
+      <div><span class="c-cmd">git revert</span> <span class="c-muted">Safe undo</span></div>
+      <div><span class="c-cmd">git cherry-pick</span> <span class="c-muted">Pick commit</span></div>
+      <div><span class="c-cmd">git tag</span> <span class="c-muted">Create tag</span></div>
+      <div><span class="c-cmd">git reflog</span> <span class="c-muted">View reflog</span></div>
+      <div><span class="c-cmd">git bisect</span> <span class="c-muted">Find bug commit</span></div>
+      <div><span class="c-cmd">git blame</span> <span class="c-muted">Who wrote what</span></div>
+      <div><span class="c-cmd">git show</span> <span class="c-muted">Show commit</span></div>
+    </div>
+    <div class="c-muted" style="margin-top:10px">Type <span class="c-cmd">clear</span> to clear terminal. Click a mission in the sidebar!</div>
+  `);
+}
+
+// ── PRINT HELPERS ──────────────────────────────────────
+function printPrompt(cmd) {
+  const out = document.getElementById('terminal-output');
+  const row = document.createElement('div');
+  row.className = 't-prompt-line';
+  row.innerHTML = `<span class="t-ps1">user@gitquest</span><span class="t-ps1-sep">:</span><span class="t-ps1-branch">(${REPO.branch})</span><span class="t-ps1-sep">$</span>&nbsp;<span class="t-cmd-echo">${escHtml(cmd)}</span>`;
+  out.appendChild(row);
+}
+
+function printLines(lines) {
+  const out = document.getElementById('terminal-output');
+  lines.forEach(l => {
+    if (l.t === 'blank' || l.s === '') {
+      const el = document.createElement('div'); el.className = 't-blank'; out.appendChild(el); return;
+    }
+    const s = l.s || '';
+    s.split('\n').forEach(line => {
+      const el = document.createElement('div');
+      el.className = `t-line t-${l.t || 'out'}`;
+      el.textContent = line;
+      out.appendChild(el);
+    });
+  });
+  out.scrollTop = out.scrollHeight;
+  updateStatusBar();
+}
+
+function printHTML(html) {
+  const out = document.getElementById('terminal-output');
+  const div = document.createElement('div');
+  div.style.padding = '2px 0';
+  div.innerHTML = html;
+  out.appendChild(div);
+  out.scrollTop = out.scrollHeight;
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearTerminal() {
+  document.getElementById('terminal-output').innerHTML = '';
+  printWelcomeBanner();
+}
+
+// ── MISSION PROGRESS ───────────────────────────────────
+function checkMissionProgress(cmd) {
+  if (G.currentMission < 0) return;
+  const mission = MISSIONS[G.currentMission];
+  if (!mission) return;
+  if (!G.missionState[G.currentMission]) G.missionState[G.currentMission] = new Set();
+
+  const progress = G.missionState[G.currentMission];
+  mission.requiredCmds.forEach(req => {
+    if (cmd === req || cmd.startsWith(req + ' ') || (req.endsWith('.') && cmd.startsWith(req.slice(0,-1)))) {
+      progress.add(req);
+    }
+    // Fuzzy match
+    if (!progress.has(req)) {
+      const reqParts = req.split(' ');
+      const cmdParts = cmd.split(' ');
+      if (reqParts[0] === cmdParts[0] && reqParts[1] === cmdParts[1]) {
+        progress.add(req);
+      }
+    }
+  });
+
+  if (progress.size >= mission.requiredCmds.length && !G.completedMissions.includes(G.currentMission)) {
+    setTimeout(() => completeMission(G.currentMission), 600);
+  }
+}
+
+function completeMission(idx) {
+  if (G.completedMissions.includes(idx)) return;
+  G.completedMissions.push(idx);
+
+  const mission = MISSIONS[idx];
+  addXP(mission.xp);
+
+  // Unlock next
+  const next = idx + 1;
+  if (next < MISSIONS.length) G.unlockedMissions.push(next);
+
+  // Update sidebar
+  buildSidebar();
+  showLevelUp(mission);
+}
+
+// ── XP SYSTEM ──────────────────────────────────────────
+function addXP(amount) {
+  G.xp += amount;
+  const level = Math.floor(G.xp / XP_PER_LV) + 1;
+  G.level = level;
+  document.getElementById('xp-num').textContent = G.xp;
+  document.getElementById('sb-lv').textContent = level;
+  document.getElementById('lv-pill').textContent = `LV ${level}`;
+  document.getElementById('sb-xp').textContent = `${G.xp} XP`;
+  const pct = ((G.xp % XP_PER_LV) / XP_PER_LV) * 100;
+  document.getElementById('xp-fill').style.width = pct + '%';
+
+  const titles = ['Git Explorer','Git Apprentice','Git Developer','Git Senior','Git Lead','Git Master','Git Legend'];
+  const titleEl = document.querySelector('.level-badge span:last-child');
+  if (titleEl) titleEl.textContent = titles[Math.min(level-1, titles.length-1)];
+}
+
+function addXPToast(amt, title, msg) {
+  addXP(amt);
+  showToast('⚡', title || `+${amt} XP`, msg);
+}
+
+function showToast(icon, title, msg) {
+  const t = document.getElementById('xp-toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function showLevelUp(mission) {
+  document.getElementById('lu-emoji').textContent = mission.emoji;
+  document.getElementById('lu-title-name').textContent = mission.title;
+  document.getElementById('lu-sub').textContent = mission.completionMsg;
+  document.getElementById('lu-xp').textContent = `+${mission.xp} XP`;
+  const nextIdx = MISSIONS.indexOf(mission) + 1;
+  const nextBtn = document.getElementById('lu-next-btn');
+  const isLastMission = nextIdx >= MISSIONS.length;
+  if (!isLastMission) {
+    nextBtn.textContent = `Next: ${MISSIONS[nextIdx].title} →`;
+    nextBtn.style.display = '';
+    nextBtn.onclick = goNextMission;
+  } else {
+    nextBtn.textContent = 'Get Your Certificate 🎓';
+    nextBtn.onclick = function() {
+      closeLevelUp();
+      showNameDialog();
+    };
+  }
+  document.getElementById('level-up-overlay').classList.add('show');
+  updateBadge();
+}
+
+function showNameDialog() {
+  const overlay = document.getElementById('name-dialog-overlay');
+  overlay.classList.add('show');
+  setTimeout(() => document.getElementById('nd-name-input').focus(), 300);
+}
+
+function submitPlayerName() {
+  const nameInput = document.getElementById('nd-name-input');
+  const name = nameInput.value.trim();
+  if (!name) {
+    nameInput.style.borderColor = 'var(--red)';
+    nameInput.placeholder = 'Please enter your name!';
+    setTimeout(() => {
+      nameInput.style.borderColor = '';
+      nameInput.placeholder = 'e.g. Arjun Sharma';
+    }, 1800);
+    return;
+  }
+  // Store data for the certificate page
+  const today = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+  const certData = {
+    name,
+    date: today,
+    xp: String(G.xp),
+    level: G.level,
+    id: String(Math.floor(Math.random() * 90000) + 10000)
+  };
+  localStorage.setItem('gitquest_cert', JSON.stringify(certData));
+  // Open certificate in a new tab
+  window.open('gitquest-certificate.html', '_blank');
+  document.getElementById('name-dialog-overlay').classList.remove('show');
+}
+
+function closeLevelUp() {
+  document.getElementById('level-up-overlay').classList.remove('show');
+}
+
+function goNextMission() {
+  closeLevelUp();
+  const next = G.completedMissions.length < MISSIONS.length ? G.completedMissions.length : MISSIONS.length - 1;
+  loadMission(next);
+}
+
+function updateBadge() {
+  const b = document.getElementById('notif-badge');
+  const pending = G.unlockedMissions.filter(i => !G.completedMissions.includes(i)).length;
+  b.textContent = pending;
+  b.style.display = pending > 0 ? 'flex' : 'none';
+}
+
+// ── SIDEBAR ────────────────────────────────────────────
+const GROUPS = ['Basics', 'Undoing', 'Branching', 'Remote', 'Advanced', 'Debug'];
+
+function buildSidebar() {
+  const list = document.getElementById('missions-list');
+  list.innerHTML = '';
+
+  const grouped = {};
+  MISSIONS.forEach((m, i) => {
+    if (!grouped[m.group]) grouped[m.group] = [];
+    grouped[m.group].push({m, i});
+  });
+
+  GROUPS.forEach(group => {
+    if (!grouped[group]) return;
+
+    const header = document.createElement('div');
+    header.className = 'sidebar-section-header open';
+    header.innerHTML = `<span class="chevron">▶</span> ${group.toUpperCase()}`;
+    header.onclick = () => toggleSection(header);
+    list.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+
+    grouped[group].forEach(({m, i}) => {
+      const locked = !G.unlockedMissions.includes(i);
+      const done = G.completedMissions.includes(i);
+      const active = G.currentMission === i;
+
+      const item = document.createElement('div');
+      item.className = `mission-item${active ? ' active' : ''}${done ? ' done' : ''}${locked ? ' locked' : ''}`;
+      item.id = `mission-nav-${i}`;
+      item.innerHTML = `<span class="mi-icon">${done ? '✓' : m.icon}</span><span class="mi-label">${m.title}</span>`;
+      if (!locked) item.onclick = () => loadMission(i);
+      body.appendChild(item);
+    });
+
+    list.appendChild(body);
+  });
+
+  updateBadge();
+}
+
+// ── LOAD MISSION ───────────────────────────────────────
+function loadMission(idx) {
+  if (!G.unlockedMissions.includes(idx)) {
+    showToast('🔒', 'Locked!', 'Complete previous mission first!');
+    return;
+  }
+
+  G.currentMission = idx;
+  const mission = MISSIONS[idx];
+  const result = mission.content();
+
+  // Update sidebar
+  document.querySelectorAll('.mission-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById(`mission-nav-${idx}`);
+  if (navEl) navEl.classList.add('active');
+
+  // Update tab
+  const tabbar = document.getElementById('tabbar');
+  let tab = document.getElementById(`tab-${mission.id}`);
+  if (!tab) {
+    tab = document.createElement('div');
+    tab.className = 'tab modified';
+    tab.id = `tab-${mission.id}`;
+    tab.innerHTML = `<span class="tab-icon">${mission.icon}</span><span>${mission.filename}</span><div class="tab-dot"></div><span class="tab-close">✕</span>`;
+    tab.onclick = () => activateTab(mission.id, idx);
+    tab.querySelector('.tab-close')?.addEventListener('click', (e) => { e.stopPropagation(); tab.remove(); });
+    tabbar.appendChild(tab);
+  }
+  activateTab(mission.id, idx);
+
+  // Update breadcrumb
+  document.getElementById('bc-cur').textContent = mission.filename;
+  document.getElementById('se-current-label').textContent = mission.filename;
+
+  // Update editor
+  document.getElementById('line-numbers').innerHTML = result.lns;
+  document.getElementById('editor-content').innerHTML = result.html;
+  document.getElementById('editor-content').classList.add('fade-in');
+  setTimeout(() => document.getElementById('editor-content').classList.remove('fade-in'), 300);
+
+  // Update status bar
+  document.getElementById('sb-mission').textContent = mission.title;
+
+  // Print welcome to terminal
+  printLines([
+    {t:'blank'},
+    {t:'info', s:`━━━ Mission ${idx+1}: ${mission.title} ━━━`},
+    {t:'muted', s:`XP reward: +${mission.xp} | Type your commands below!`},
+    {t:'blank'},
+  ]);
+
+  // Scroll lesson pane to top
+  document.getElementById('lesson-pane').scrollTop = 0;
+}
+
+function activateTab(id, idx) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById(`tab-${id}`);
+  if (tab) { tab.classList.add('active'); tab.classList.remove('modified'); }
+}
+
+// ── STATUS BAR ─────────────────────────────────────────
+function updatePS1() {
+  document.getElementById('t-ps1-static').textContent = `user@gitquest:(${REPO.branch})$ `;
+  document.getElementById('sb-branch').textContent = REPO.branch;
+}
+
+function updateStatusBar() {
+  const out = document.getElementById('terminal-output');
+  document.getElementById('sb-ln').textContent = out.children.length;
+}
+
+// ── SIDEBAR TOGGLE ─────────────────────────────────────
+function toggleSection(header) {
+  header.classList.toggle('open');
+  const body = header.nextElementSibling;
+  if (body && body.classList.contains('section-body')) {
+    body.style.display = header.classList.contains('open') ? '' : 'none';
+  }
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.style.display = sb.style.display === 'none' ? '' : 'none';
+}
+
+// ── COMMAND PALETTE ────────────────────────────────────
+function openPalette() {
+  const p = document.getElementById('cmd-palette');
+  p.classList.add('open');
+  document.getElementById('cp-input').value = '';
+  filterPalette();
+  document.getElementById('cp-input').focus();
+}
+function closePalette() { document.getElementById('cmd-palette').classList.remove('open'); }
+
+function filterPalette() {
+  const q = document.getElementById('cp-input').value.toLowerCase();
+  const list = document.getElementById('cp-list');
+  list.innerHTML = '';
+  MISSIONS.filter(m => m.title.toLowerCase().includes(q) || m.group.toLowerCase().includes(q))
+    .slice(0, 8).forEach((m, i) => {
+      const item = document.createElement('div');
+      item.className = 'cp-item' + (i===0?' active':'');
+      item.innerHTML = `<span class="cp-icon">${m.icon}</span><span>${m.title}</span><span style="margin-left:auto;font-size:11px;color:var(--muted)">${m.group}</span>`;
+      const idx = MISSIONS.indexOf(m);
+      item.onclick = () => { loadMission(idx); closePalette(); };
+      list.appendChild(item);
+    });
+}
+
+function cpKey(e) {
+  if (e.key === 'Escape') closePalette();
+  if (e.key === 'Enter') { document.querySelector('.cp-item.active')?.click(); }
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'p') { e.preventDefault(); openPalette(); }
+  if (e.key === 'Escape') closePalette();
+});
+document.getElementById('cmd-palette').addEventListener('click', e => e.stopPropagation());
+document.addEventListener('click', () => closePalette());
+
+// ── RESIZE HANDLE ──────────────────────────────────────
+(function setupResize() {
+  const handle = document.getElementById('resize-handle');
+  const panel = document.getElementById('terminal-panel');
+  let dragging = false, startY = 0, startH = 0;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startY = e.clientY; startH = panel.offsetHeight;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'ns-resize';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = startY - e.clientY;
+    const newH = Math.max(120, Math.min(startH + delta, window.innerHeight * 0.7));
+    panel.style.height = newH + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false; handle.classList.remove('dragging');
+    document.body.style.cursor = '';
+  });
+})();
+
+// ── TERMINAL INPUT ─────────────────────────────────────
+(function setupTerminal() {
+  const input = document.getElementById('terminal-input');
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const val = input.value;
+      if (val.trim()) {
+        G.cmdHistory.unshift(val);
+        G.historyIdx = -1;
+      }
+      execCommand(val);
+      input.value = '';
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      G.historyIdx = Math.min(G.historyIdx + 1, G.cmdHistory.length - 1);
+      input.value = G.cmdHistory[G.historyIdx] || '';
+      setTimeout(() => input.setSelectionRange(input.value.length, input.value.length), 0);
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      G.historyIdx = Math.max(G.historyIdx - 1, -1);
+      input.value = G.historyIdx >= 0 ? G.cmdHistory[G.historyIdx] : '';
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      // Autocomplete
+      const v = input.value;
+      const cmds = ['git init','git status','git add .','git add ','git commit -m "','git log','git log --oneline','git diff','git branch','git checkout ','git switch ','git merge ','git push','git pull','git fetch','git clone ','git stash','git stash pop','git rebase','git reset --soft HEAD~1','git reset --hard HEAD~1','git revert HEAD','git cherry-pick ','git tag','git reflog','git bisect start','git blame ','git show','help','clear'];
+      const match = cmds.find(c => c.startsWith(v) && c !== v);
+      if (match) input.value = match;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      printLines([{t:'muted', s:'^C'}]);
+      input.value = '';
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+      e.preventDefault(); clearTerminal();
+    }
+  });
+
+  // Focus terminal on click anywhere in terminal area
+  document.getElementById('terminal-panel').addEventListener('click', () => input.focus());
+})();
+
+// ── WELCOME SCREEN ─────────────────────────────────────
+function showWelcome() {
+  const ascii = `   ██████╗ ██╗████████╗ ██████╗ ██╗   ██╗███████╗███████╗████████╗
+  ██╔════╝ ██║╚══██╔══╝██╔═══██╗██║   ██║██╔════╝██╔════╝╚══██╔══╝
+  ██║  ███╗██║   ██║   ██║   ██║██║   ██║█████╗  ███████╗   ██║   
+  ██║   ██║██║   ██║   ██║▄▄ ██║██║   ██║██╔══╝  ╚════██║   ██║   
+  ╚██████╔╝██║   ██║   ╚██████╔╝╚██████╔╝███████╗███████║   ██║   
+   ╚═════╝ ╚═╝   ╚═╝    ╚══▀▀═╝  ╚═════╝ ╚══════╝╚══════╝   ╚═╝   `;
+
+  document.getElementById('line-numbers').innerHTML = Array.from({length:40},(_,i) => `<span class="ln">${i+1}</span>`).join('');
+  document.getElementById('editor-content').innerHTML = `
+    <div class="c-comment"># Welcome to GitQuest — Git Terminal Game</div>
+    <div class="c-comment"># Git Seekho, Git Jio — Bhai style mein! 🇮🇳</div>
+    <div style="height:16px"></div>
+    <div class="c-heading">23 Missions · 35+ Commands · Desi Flavor 🚀</div>
+    <div style="height:12px"></div>
+    <div class="callout info">
+      <div class="callout-title">🎮 How to Play</div>
+      <div>1. Click a mission in the sidebar to start learning</div>
+      <div>2. Read the explanation in this editor pane</div>
+      <div>3. Type git commands in the <strong>terminal below</strong></div>
+      <div>4. Complete all required commands → Mission Complete → XP earned!</div>
+      <div style="margin-top:8px">Shortcut: <kbd class="kbd">Tab</kbd> for autocomplete · <kbd class="kbd">↑↓</kbd> for history · <kbd class="kbd">Ctrl+L</kbd> clear</div>
+    </div>
+    <div style="height:12px"></div>
+    <div class="callout desi">
+      <div class="callout-title">🇮🇳 Pro Tip — Bhai ke liye</div>
+      <div>Har mission mein ek "Desi Explanation" hai jo real world examples deta hai. Plus horror stories from actual open source repos — node_modules wali, 11,000 files wali, aur intern wali 💀</div>
+    </div>
+    <div style="height:12px"></div>
+    <div class="c-subhead">Available Commands (Tab to autocomplete):</div>
+    <div class="code-block" style="margin-top:8px">
+      <div class="cb-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px 16px;font-size:12px">
+        ${['git init','git status','git add','git commit','git log','git diff','git restore','git rm','git mv','git branch','git checkout','git switch','git merge','git remote','git push','git pull','git fetch','git clone','git reset','git revert','git amend','git stash','git cherry-pick','git rebase','git tag','git reflog','git bisect','git blame','git show'].map(c => `<span><span class="c-cmd">${c}</span></span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function printWelcomeBanner() {
+  printLines([
+    {t:'info', s:'GitQuest Terminal — Git Seekho, Git Jio 🇮🇳'},
+    {t:'muted', s:'Type git commands here. Tab for autocomplete. ↑↓ for history.'},
+    {t:'muted', s:'Type "help" to see all commands. Click a mission to start!'},
+    {t:'blank'},
+  ]);
+}
+
+// ── INIT ───────────────────────────────────────────────
+buildSidebar();
+showWelcome();
+updatePS1();
+printWelcomeBanner();
+updateBadge();
+document.getElementById('terminal-input').focus();
+</script>
+</body>
+</html>
